@@ -1,6 +1,7 @@
 import React from 'react';
 import useTrack from '../../hooks/useTrack/useTrack';
 import VideoTrack from '../VideoTrack/VideoTrack';
+import useVideoContext from '../../hooks/useVideoContext/useVideoContext';
 
 import { IVideoTrack } from '../../types';
 import { LocalTrackPublication, Participant, RemoteTrackPublication, Track } from 'twilio-video';
@@ -15,6 +16,7 @@ interface PublicationProps {
 
 export default function Publication({ publication, isLocalParticipant, videoPriority }: PublicationProps) {
   const track = useTrack(publication);
+  //  let {extraVideoTrack} = useVideoContext();
 
   if (!track) return null;
 

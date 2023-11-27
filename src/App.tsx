@@ -2,12 +2,14 @@ import React from 'react';
 import { styled, Theme } from '@material-ui/core/styles';
 
 import MenuBar from './components/MenuBar/MenuBar';
+import MenuBarNonverbal from './components/MenuBarNonverbal/MenuBar';
+import MenuBarIWhisper from './components/MenuBarIWhisper/MenuBar';
 import MobileTopMenuBar from './components/MobileTopMenuBar/MobileTopMenuBar';
 import PreJoinScreens from './components/PreJoinScreens/PreJoinScreens';
 import ReconnectingNotification from './components/ReconnectingNotification/ReconnectingNotification';
 import RecordingNotifications from './components/RecordingNotifications/RecordingNotifications';
 import Room from './components/Room/Room';
-
+import { useAppState } from './state';
 import useHeight from './hooks/useHeight/useHeight';
 import useRoomState from './hooks/useRoomState/useRoomState';
 
@@ -19,7 +21,7 @@ const Container = styled('div')({
 const Main = styled('main')(({ theme }: { theme: Theme }) => ({
   overflow: 'hidden',
   paddingBottom: `${theme.footerHeight}px`, // Leave some space for the footer
-  background: 'black',
+  background: 'transparent',
   [theme.breakpoints.down('sm')]: {
     paddingBottom: `${theme.mobileFooterHeight + theme.mobileTopBarHeight}px`, // Leave some space for the mobile header and footer
   },
@@ -34,6 +36,7 @@ export default function App() {
   // We will dynamically set the height with 'window.innerHeight', which means that this
   // will look good on mobile browsers even after the location bar opens or closes.
   const height = useHeight();
+  const { maxGalleryViewParticipants, experimentNameG, roleNameG, conditionNameG, isPreStage } = useAppState();
 
   return (
     <Container style={{ height }}>
@@ -45,7 +48,8 @@ export default function App() {
           <RecordingNotifications />
           <MobileTopMenuBar />
           <Room />
-          <MenuBar />
+          {experimentNameG === 'Nonverbal Cues Experiment' ? <MenuBarNonverbal /> : null}
+          {experimentNameG === 'I-Whisper Experiment' ? <MenuBarIWhisper /> : null}
         </Main>
       )}
     </Container>

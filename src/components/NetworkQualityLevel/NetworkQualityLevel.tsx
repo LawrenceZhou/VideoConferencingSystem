@@ -6,7 +6,7 @@ const useStyles = makeStyles({
   outerContainer: {
     width: '2em',
     height: '2em',
-    padding: '0.9em',
+    padding: '0.1em',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',

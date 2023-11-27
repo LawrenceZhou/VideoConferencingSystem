@@ -106,6 +106,7 @@ export function MobileGalleryView() {
                   participant={participant}
                   isLocalParticipant={room!.localParticipant === participant}
                   isDominantSpeaker={dominantSpeaker === participant}
+                  trackToShow="camera"
                 />
               </div>
             ))}

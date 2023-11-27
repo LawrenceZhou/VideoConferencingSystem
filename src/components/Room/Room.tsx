@@ -1,14 +1,19 @@
 import React, { useEffect, useRef } from 'react';
 import BackgroundSelectionDialog from '../BackgroundSelectionDialog/BackgroundSelectionDialog';
 import ChatWindow from '../ChatWindow/ChatWindow';
+import IWhisperWindow from '../IWhisperWindow/IWhisperWindow';
 import clsx from 'clsx';
+import { NonverbalView } from '../NonverbalView/NonverbalView';
+import IWhisperView from '../IWhisperView/IWhisperView';
 import { GalleryView } from '../GalleryView/GalleryView';
 import { MobileGalleryView } from '../MobileGalleryView/MobileGalleryView';
 import MainParticipant from '../MainParticipant/MainParticipant';
 import { makeStyles, Theme, useMediaQuery, useTheme } from '@material-ui/core';
-import { Participant, Room as IRoom } from 'twilio-video';
+import Participant from '../Participant/Participant';
+import { Room as IRoom } from 'twilio-video';
 import { ParticipantAudioTracks } from '../ParticipantAudioTracks/ParticipantAudioTracks';
 import ParticipantList from '../ParticipantList/ParticipantList';
+
 import { useAppState } from '../../state';
 import useChatContext from '../../hooks/useChatContext/useChatContext';
 import useScreenShareParticipant from '../../hooks/useScreenShareParticipant/useScreenShareParticipant';
@@ -23,14 +28,14 @@ const useStyles = makeStyles((theme: Theme) => {
       position: 'relative',
       height: '100%',
       display: 'grid',
-      gridTemplateColumns: `1fr ${theme.sidebarWidth}px`,
+      gridTemplateColumns: `1fr ${theme.sidebarNewWidth}px`,
       gridTemplateRows: '100%',
       [theme.breakpoints.down('sm')]: {
         gridTemplateColumns: `100%`,
         gridTemplateRows: `calc(100% - ${totalMobileSidebarHeight}) ${totalMobileSidebarHeight}`,
       },
     },
-    rightDrawerOpen: { gridTemplateColumns: `1fr ${theme.sidebarWidth}px ${theme.rightDrawerWidth}px` },
+    rightDrawerOpen: { gridTemplateColumns: `1fr ${theme.sidebarNewWidth}px ${theme.rightDrawerWidth}px` },
   };
 });
 
@@ -41,7 +46,7 @@ const useStyles = makeStyles((theme: Theme) => {
  */
 
 export function useSetSpeakerViewOnScreenShare(
-  screenShareParticipant: Participant | undefined,
+  screenShareParticipant: typeof Participant | undefined,
   room: IRoom | null,
   setIsGalleryViewActive: React.Dispatch<React.SetStateAction<boolean>>,
   isGalleryViewActive: boolean
@@ -52,41 +57,32 @@ export function useSetSpeakerViewOnScreenShare(
   useEffect(() => {
     isGalleryViewActiveRef.current = isGalleryViewActive;
   }, [isGalleryViewActive]);
-
-  useEffect(() => {
-    if (screenShareParticipant && screenShareParticipant !== room!.localParticipant) {
-      // When screensharing starts, save the user's previous view setting (speaker or gallery):
-      const prevIsGalleryViewActive = isGalleryViewActiveRef.current;
-      // Turn off gallery view so that the user can see the screen that is being shared:
-      setIsGalleryViewActive(false);
-      return () => {
-        // If the user was using gallery view prior to screensharing, turn gallery view back on
-        // once screensharing stops:
-        if (prevIsGalleryViewActive) {
-          setIsGalleryViewActive(prevIsGalleryViewActive);
-        }
-      };
-    }
-  }, [screenShareParticipant, setIsGalleryViewActive, room]);
 }
 
 export default function Room() {
   const classes = useStyles();
   const { isChatWindowOpen } = useChatContext();
   const { isBackgroundSelectionOpen, room } = useVideoContext();
-  const { isGalleryViewActive, setIsGalleryViewActive } = useAppState();
+  const {
+    isGalleryViewActive,
+    setIsGalleryViewActive,
+    experimentNameG,
+    conditionNameG,
+    roleNameG,
+    isIWhisperWindowOpen,
+  } = useAppState();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const screenShareParticipant = useScreenShareParticipant();
 
   // Here we switch to speaker view when a participant starts sharing their screen, but
   // the user is still free to switch back to gallery view.
-  useSetSpeakerViewOnScreenShare(screenShareParticipant, room, setIsGalleryViewActive, isGalleryViewActive);
+  //useSetSpeakerViewOnScreenShare(screenShareParticipant, room, setIsGalleryViewActive, isGalleryViewActive);
 
   return (
     <div
       className={clsx(classes.container, {
-        [classes.rightDrawerOpen]: isChatWindowOpen || isBackgroundSelectionOpen,
+        [classes.rightDrawerOpen]: isChatWindowOpen || isBackgroundSelectionOpen || isIWhisperWindowOpen,
       })}
     >
       {/* 
@@ -96,20 +92,11 @@ export default function Room() {
       */}
       <ParticipantAudioTracks />
 
-      {isGalleryViewActive ? (
-        isMobile ? (
-          <MobileGalleryView />
-        ) : (
-          <GalleryView />
-        )
-      ) : (
-        <>
-          <MainParticipant />
-          <ParticipantList />
-        </>
-      )}
+      {experimentNameG === 'Nonverbal Cues Experiment' ? <NonverbalView /> : null}
 
-      <ChatWindow />
+      {experimentNameG === 'I-Whisper Experiment' ? <IWhisperView /> : null}
+      {experimentNameG === 'I-Whisper Experiment' ? conditionNameG === '1' ? <IWhisperWindow /> : <ChatWindow /> : null}
+
       <BackgroundSelectionDialog />
     </div>
   );

@@ -2,7 +2,7 @@ import React from 'react';
 import clsx from 'clsx';
 import Participant from '../Participant/Participant';
 import { makeStyles, createStyles, Theme } from '@material-ui/core/styles';
-import useMainParticipant from '../../hooks/useMainParticipant/useMainParticipant';
+import useMainParticipant from '../../hooks/useMainParticipantIWhisper/useMainParticipant';
 import useParticipantsContext from '../../hooks/useParticipantsContext/useParticipantsContext';
 import useVideoContext from '../../hooks/useVideoContext/useVideoContext';
 import useSelectedParticipant from '../VideoProvider/useSelectedParticipant/useSelectedParticipant';
@@ -30,8 +30,8 @@ const useStyles = makeStyles((theme: Theme) =>
       justifyContent: 'center',
     },
     innerScrollContainer: {
-      width: `calc(${theme.sidebarWidth}px - 3em)`,
-      padding: '1.5em 0',
+      width: `calc(${theme.sidebarNewWidth}px - 1em)`,
+      padding: '0.5em 0',
       [theme.breakpoints.down('sm')]: {
         width: 'auto',
         padding: `${theme.sidebarMobilePadding}px`,
@@ -61,7 +61,7 @@ export default function ParticipantList() {
     >
       <div className={classes.scrollContainer}>
         <div className={classes.innerScrollContainer}>
-          <Participant participant={localParticipant} isLocalParticipant={true} />
+          {true && <Participant participant={localParticipant} isLocalParticipant={true} trackToShow="camera" />}
           {speakerViewParticipants.map(participant => {
             const isSelected = participant === selectedParticipant;
             const hideParticipant =
@@ -73,6 +73,7 @@ export default function ParticipantList() {
                 isSelected={participant === selectedParticipant}
                 onClick={() => setSelectedParticipant(participant)}
                 hideParticipant={hideParticipant}
+                trackToShow="camera"
               />
             );
           })}

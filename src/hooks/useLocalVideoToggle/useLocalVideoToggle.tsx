@@ -1,13 +1,21 @@
-import { LocalVideoTrack } from 'twilio-video';
+import { LocalVideoTrack, Track, LogLevels } from 'twilio-video';
 import { useCallback, useState } from 'react';
 import useVideoContext from '../useVideoContext/useVideoContext';
+import { useAppState } from '../../state';
 
+interface MediaStreamTrackPublishOptions {
+  name?: string;
+  priority: Track.Priority;
+  logLevel: LogLevels;
+}
 export default function useLocalVideoToggle() {
   const { room, localTracks, getLocalVideoTrack, removeLocalVideoTrack, onError } = useVideoContext();
   const localParticipant = room?.localParticipant;
+
   const videoTrack = localTracks.find(
-    track => !track.name.includes('screen') && track.kind === 'video'
+    track => track.name.includes('camera') && track.kind === 'video'
   ) as LocalVideoTrack;
+
   const [isPublishing, setIspublishing] = useState(false);
 
   const toggleVideoEnabled = useCallback(() => {
@@ -20,7 +28,9 @@ export default function useLocalVideoToggle() {
       } else {
         setIspublishing(true);
         getLocalVideoTrack()
-          .then((track: LocalVideoTrack) => localParticipant?.publishTrack(track, { priority: 'low' }))
+          .then((track: LocalVideoTrack) => {
+            localParticipant?.publishTrack(track, { priority: 'standard' });
+          })
           .catch(onError)
           .finally(() => {
             setIspublishing(false);

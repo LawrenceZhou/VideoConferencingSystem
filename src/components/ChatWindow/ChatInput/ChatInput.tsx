@@ -7,8 +7,17 @@ import { isMobile } from '../../../utils';
 import SendMessageIcon from '../../../icons/SendMessageIcon';
 import Snackbar from '../../Snackbar/Snackbar';
 import TextareaAutosize from '@material-ui/core/TextareaAutosize';
+import Select from '@material-ui/core/Select';
+import MenuItem from '@material-ui/core/MenuItem';
+
+import useVideoContext from '../../../hooks/useVideoContext/useVideoContext';
+import useParticipantsContext from '../../../hooks/useParticipantsContext/useParticipantsContext';
 
 const useStyles = makeStyles(theme => ({
+  toContainer: {
+    display: 'flex',
+    //flexDirection: 'row',
+  },
   chatInputContainer: {
     borderTop: '1px solid #e4e7e9',
     borderBottom: '1px solid #e4e7e9',
@@ -54,20 +63,46 @@ const useStyles = makeStyles(theme => ({
     border: '2px solid transparent',
   },
   isTextareaFocused: {
-    borderColor: theme.palette.primary.main,
-    borderRadius: '4px',
+    //borderColor: theme.palette.primary.main,
+    borderColor: 'transparent',
+    borderRadius: '0px',
+  },
+
+  toLabel: {
+    height: '20px',
+  },
+  toSelect: {
+    height: '20px',
+    background: 'transparent',
+    '&:focused': {
+      background: 'transparent',
+    },
+    '&:selected': {
+      background: 'transparent',
+    },
+  },
+  toSelectItem: {
+    height: '30px',
+    '&:focused': {
+      background: 'transparent',
+    },
+    '&:selected': {
+      background: 'transparent',
+    },
   },
 }));
 
 interface ChatInputProps {
   conversation: Conversation;
   isChatWindowOpen: boolean;
+  to: string;
+  setTo: (to: string) => void;
 }
 
 const ALLOWED_FILE_TYPES =
   'audio/*, image/*, text/*, video/*, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document .xslx, .ppt, .pdf, .key, .svg, .csv';
 
-export default function ChatInput({ conversation, isChatWindowOpen }: ChatInputProps) {
+export default function ChatInput({ conversation, isChatWindowOpen, to, setTo }: ChatInputProps) {
   const classes = useStyles();
   const [messageBody, setMessageBody] = useState('');
   const [isSendingFile, setIsSendingFile] = useState(false);
@@ -76,6 +111,11 @@ export default function ChatInput({ conversation, isChatWindowOpen }: ChatInputP
   const textInputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isTextareaFocused, setIsTextareaFocused] = useState(false);
+  const [isToFocused, setIsToFocused] = useState(false);
+  const [isToSelected, setIsToSelected] = useState(false);
+
+  const toSelectRef = useRef<HTMLInputElement>(null);
+  const { galleryViewParticipants } = useParticipantsContext();
 
   useEffect(() => {
     if (isChatWindowOpen) {
@@ -99,7 +139,7 @@ export default function ChatInput({ conversation, isChatWindowOpen }: ChatInputP
 
   const handleSendMessage = (message: string) => {
     if (isValidMessage) {
-      conversation.sendMessage(message.trim());
+      conversation.sendMessage(message.trim(), { to: to });
       setMessageBody('');
     }
   };
@@ -112,7 +152,7 @@ export default function ChatInput({ conversation, isChatWindowOpen }: ChatInputP
       setIsSendingFile(true);
       setFileSendError(null);
       conversation
-        .sendMessage(formData)
+        .sendMessage(formData, { to: to })
         .catch((e: Error) => {
           if (e.code === 413) {
             setFileSendError('File size is too large. Maximum file size is 150MB.');
@@ -127,6 +167,12 @@ export default function ChatInput({ conversation, isChatWindowOpen }: ChatInputP
     }
   };
 
+  const handleToChange = (tName: string) => {
+    setTo(tName);
+    toSelectRef.current?.blur();
+    (document.activeElement as HTMLElement).blur();
+  };
+
   return (
     <div className={classes.chatInputContainer}>
       <Snackbar
@@ -136,6 +182,28 @@ export default function ChatInput({ conversation, isChatWindowOpen }: ChatInputP
         variant="error"
         handleClose={() => setFileSendError(null)}
       />
+      <div className={classes.toContainer}>
+        <div className={classes.toLabel}>To: </div>
+        <Select
+          id="chat-to"
+          className={classes.toSelect /*clsx(classes.isToFocused, { [classes.isToFocused]: isToFocused })*/}
+          onChange={e => handleToChange(e.target.value as string)}
+          value={to}
+          ref={toSelectRef}
+          disableUnderline
+        >
+          <MenuItem value={'all'} key={'all'} selected className={classes.toSelectItem}>
+            all
+          </MenuItem>
+
+          {galleryViewParticipants.map(g => (
+            <MenuItem value={g.identity} key={g.identity} selected className={classes.toSelectItem}>
+              {g.identity}
+            </MenuItem>
+          ))}
+        </Select>
+      </div>
+
       <div className={clsx(classes.textAreaContainer, { [classes.isTextareaFocused]: isTextareaFocused })}>
         {/* 
         Here we add the "isTextareaFocused" class when the user is focused on the TextareaAutosize component.
@@ -143,7 +211,7 @@ export default function ChatInput({ conversation, isChatWindowOpen }: ChatInputP
         component does not work well in Firefox. See: https://github.com/twilio/twilio-video-app-react/issues/498
         */}
         <TextareaAutosize
-          minRows={1}
+          minRows={3}
           maxRows={3}
           className={classes.textArea}
           aria-label="chat input"
@@ -151,7 +219,6 @@ export default function ChatInput({ conversation, isChatWindowOpen }: ChatInputP
           onKeyPress={handleReturnKeyPress}
           onChange={handleChange}
           value={messageBody}
-          data-cy-chat-input
           ref={textInputRef}
           onFocus={() => setIsTextareaFocused(true)}
           onBlur={() => setIsTextareaFocused(false)}

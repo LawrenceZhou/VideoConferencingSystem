@@ -1,6 +1,7 @@
 import React from 'react';
 import { makeStyles, Theme, Typography } from '@material-ui/core';
 import Swoosh from './swoosh';
+import bullseye from './bullseye.svg';
 import VideoLogo from './VideoLogo';
 import TwilioLogo from './TwilioLogo';
 import { useAppState } from '../../state';
@@ -22,7 +23,7 @@ const useStyles = makeStyles((theme: Theme) => ({
   innerContainer: {
     display: 'flex',
     width: '888px',
-    height: '379px',
+
     borderRadius: '8px',
     boxShadow: '0px 2px 4px 0px rgba(40, 42, 43, 0.3)',
     overflow: 'hidden',
@@ -43,7 +44,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     justifyContent: 'center',
     backgroundImage: Swoosh,
     backgroundSize: 'cover',
-    width: '296px',
+    width: '0px',
     [theme.breakpoints.down('sm')]: {
       width: '100%',
       height: '100px',
@@ -100,17 +101,11 @@ const IntroContainer = (props: IntroContainerProps) => {
 
   return (
     <div className={classes.background}>
-      <TwilioLogo className={classes.twilioLogo} />
       {user && location.pathname !== '/login' && <UserMenu />}
       <div className={classes.container}>
         <div className={classes.innerContainer}>
           <div className={classes.swooshContainer}>
-            <div className={classes.logoContainer}>
-              <VideoLogo />
-              <Typography variant="h6" className={classes.title}>
-                Twilio Programmable Video
-              </Typography>
-            </div>
+            <div className={classes.logoContainer}></div>
           </div>
           <div className={classes.content}>{props.children}</div>
         </div>

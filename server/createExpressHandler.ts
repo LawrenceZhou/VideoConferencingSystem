@@ -23,6 +23,7 @@ const context: ServerlessContext = {
   ROOM_TYPE: 'group',
   CONVERSATIONS_SERVICE_SID: TWILIO_CONVERSATIONS_SERVICE_SID,
   getTwilioClient: () => twilioClient,
+  LessonStarted: false
 };
 
 export function createExpressHandler(serverlessFunction: ServerlessFunction) {

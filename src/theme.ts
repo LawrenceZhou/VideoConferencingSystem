@@ -3,6 +3,7 @@ import { createTheme } from '@material-ui/core';
 declare module '@material-ui/core/styles/createTheme' {
   interface Theme {
     sidebarWidth: number;
+    sidebarNewWidth: number;
     sidebarMobileHeight: number;
     brand: string;
     footerHeight: number;
@@ -17,6 +18,7 @@ declare module '@material-ui/core/styles/createTheme' {
   // allow configuration using `createMuiTheme`
   interface ThemeOptions {
     sidebarWidth?: number;
+    sidebarNewWidth?: number;
     sidebarMobileHeight?: number;
     brand: string;
     footerHeight: number;
@@ -72,7 +74,7 @@ export default createTheme({
     MuiTypography: {
       body1: {
         color: 'rgb(40, 42, 43)',
-        fontSize: '0.9rem',
+        fontSize: '0.8rem',
       },
     },
     MuiInputBase: {
@@ -164,9 +166,10 @@ export default createTheme({
   footerHeight: 72,
   mobileFooterHeight: 56,
   sidebarWidth: 300,
+  sidebarNewWidth: 150,
   sidebarMobileHeight: 90,
   sidebarMobilePadding: 8,
-  participantBorderWidth: 2,
+  participantBorderWidth: 4,
   mobileTopBarHeight: 52,
   rightDrawerWidth: 320,
   galleryViewBackgroundColor: '#121C2D',

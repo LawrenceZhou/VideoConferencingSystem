@@ -9,6 +9,7 @@ import { Theme, useMediaQuery } from '@material-ui/core';
 import AboutDialog from '../../../AboutDialog/AboutDialog';
 import ConnectionOptionsDialog from '../../../ConnectionOptionsDialog/ConnectionOptionsDialog';
 import DeviceSelectionDialog from '../../../DeviceSelectionDialog/DeviceSelectionDialog';
+import DeviceSelectionDiv from '../../../DeviceSelectionDialog/DeviceSelectionDiv';
 import SettingsIcon from '../../../../icons/SettingsIcon';
 import { useAppState } from '../../../../state';
 
@@ -58,7 +59,7 @@ export default function SettingsMenu({ mobileButtonClass }: { mobileButtonClass?
         <MenuItem onClick={() => setDeviceSettingsOpen(true)}>
           <Typography variant="body1">Audio and Video Settings</Typography>
         </MenuItem>
-        {roomType !== 'peer-to-peer' && roomType !== 'go' && (
+        {false && roomType !== 'peer-to-peer' && roomType !== 'go' && (
           <MenuItem onClick={() => setConnectionSettingsOpen(true)}>
             <Typography variant="body1">Connection Settings</Typography>
           </MenuItem>

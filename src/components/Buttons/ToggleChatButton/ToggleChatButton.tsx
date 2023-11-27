@@ -12,6 +12,9 @@ const useStyles = makeStyles({
   iconContainer: {
     position: 'relative',
     display: 'flex',
+    '& svg': {
+      transform: 'scale(1.5)',
+    },
   },
   circle: {
     width: '10px',
@@ -95,8 +98,6 @@ export default function ToggleChatButton() {
           <div className={clsx(classes.circle, { [classes.hasUnreadMessages]: hasUnreadMessages })} />
         </div>
       }
-    >
-      Chat
-    </Button>
+    ></Button>
   );
 }

@@ -2,6 +2,7 @@ import React from 'react';
 import { Participant, Track } from 'twilio-video';
 import Publication from '../Publication/Publication';
 import usePublications from '../../hooks/usePublications/usePublications';
+import useVideoContext from '../../hooks/useVideoContext/useVideoContext';
 
 interface ParticipantTracksProps {
   participant: Participant;
@@ -9,6 +10,7 @@ interface ParticipantTracksProps {
   enableScreenShare?: boolean;
   videoPriority?: Track.Priority | null;
   isLocalParticipant?: boolean;
+  trackToShow: string;
 }
 
 /*
@@ -25,25 +27,33 @@ export default function ParticipantTracks({
   enableScreenShare,
   videoPriority,
   isLocalParticipant,
+  trackToShow,
 }: ParticipantTracksProps) {
   const publications = usePublications(participant);
-
+  publications.forEach(p => console.log(p.trackName));
   let filteredPublications;
+  //let {extraVideoTrack} = useVideoContext();
+  //const { room, localTracks, getLocalVideoTrack, removeLocalVideoTrack, onError } = useVideoContext();
 
-  if (enableScreenShare && publications.some(p => p.trackName.includes('screen'))) {
+  /*if (enableScreenShare && publications.some(p => p.trackName.includes('screen'))) {
     // When displaying a screenshare track is allowed, and a screen share track exists,
     // remove all video tracks without the name 'screen'.
     filteredPublications = publications.filter(p => p.trackName.includes('screen') || p.kind !== 'video');
   } else {
     // Else, remove all screenshare tracks
     filteredPublications = publications.filter(p => !p.trackName.includes('screen'));
-  }
+  }*/
+  /*if (isLocalParticipant) {
+    filteredPublications=[extraVideoTrack];
+  }*/
+  filteredPublications = publications.filter(p => p.trackName.includes(trackToShow) || p.kind !== 'video');
+  //filteredPublications = [filteredPublications[0]];
 
   return (
     <>
-      {filteredPublications.map(publication => (
+      {filteredPublications.map((publication, index) => (
         <Publication
-          key={publication.kind}
+          key={index}
           publication={publication}
           participant={participant}
           isLocalParticipant={isLocalParticipant}

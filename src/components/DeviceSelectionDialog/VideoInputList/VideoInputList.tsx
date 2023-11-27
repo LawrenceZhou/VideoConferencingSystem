@@ -22,9 +22,12 @@ const useStyles = makeStyles({
 export default function VideoInputList() {
   const classes = useStyles();
   const { videoInputDevices } = useDevices();
-  const { localTracks } = useVideoContext();
+  const { localTracks, extraLocalVideoTrack } = useVideoContext();
 
-  const localVideoTrack = localTracks.find(track => track.kind === 'video') as LocalVideoTrack | undefined;
+  const localVideoTrack = localTracks.find(track => track.kind === 'video' && track.name.includes('camera')) as
+    | LocalVideoTrack
+    | undefined;
+  //const extraVideoTrack = localTracks.find(track => track.kind === 'video'&&track.name.includes('extra')) as LocalVideoTrack | undefined;
   const mediaStreamTrack = useMediaStreamTrack(localVideoTrack);
   const [storedLocalVideoDeviceId, setStoredLocalVideoDeviceId] = useState(
     window.localStorage.getItem(SELECTED_VIDEO_INPUT_KEY)
@@ -40,15 +43,19 @@ export default function VideoInputList() {
       ...(DEFAULT_VIDEO_CONSTRAINTS as {}),
       deviceId: { exact: newDeviceId },
     });
+    extraLocalVideoTrack?.restart({
+      ...(DEFAULT_VIDEO_CONSTRAINTS as {}),
+      deviceId: { exact: newDeviceId },
+    });
   }
 
   return (
     <div>
-      {localVideoTrack && (
+      {/*localVideoTrack && (
         <div className={classes.preview}>
           <VideoTrack isLocal track={localVideoTrack} />
         </div>
-      )}
+      )*/}
       {videoInputDevices.length > 1 ? (
         <FormControl fullWidth>
           <Typography variant="subtitle2" gutterBottom>

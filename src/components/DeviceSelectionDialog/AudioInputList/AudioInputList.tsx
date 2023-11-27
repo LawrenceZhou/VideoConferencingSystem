@@ -26,28 +26,25 @@ export default function AudioInputList() {
       <Typography variant="subtitle2" gutterBottom>
         Audio Input
       </Typography>
-      <Grid container alignItems="center" justifyContent="space-between">
-        <div className="inputSelect">
-          {audioInputDevices.length > 1 ? (
-            <FormControl fullWidth>
-              <Select
-                onChange={e => replaceTrack(e.target.value as string)}
-                value={localAudioInputDeviceId || ''}
-                variant="outlined"
-              >
-                {audioInputDevices.map(device => (
-                  <MenuItem value={device.deviceId} key={device.deviceId}>
-                    {device.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          ) : (
-            <Typography>{localAudioTrack?.mediaStreamTrack.label || 'No Local Audio'}</Typography>
-          )}
-        </div>
-        <AudioLevelIndicator audioTrack={localAudioTrack} color="black" />
-      </Grid>
+      <div className="inputSelect">
+        {audioInputDevices.length > 1 ? (
+          <FormControl fullWidth>
+            <Select
+              onChange={e => replaceTrack(e.target.value as string)}
+              value={localAudioInputDeviceId || ''}
+              variant="outlined"
+            >
+              {audioInputDevices.map(device => (
+                <MenuItem value={device.deviceId} key={device.deviceId}>
+                  {device.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        ) : (
+          <Typography>{localAudioTrack?.mediaStreamTrack.label || 'No Local Audio'}</Typography>
+        )}
+      </div>
     </div>
   );
 }

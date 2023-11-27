@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { RemoteParticipant } from 'twilio-video';
 import useVideoContext from '../useVideoContext/useVideoContext';
+import { RecordingRule, RecordingRules, RoomType } from '../../types';
+import { useAppState } from '../../state';
 
 /**
  * This hook returns an array of the video room's participants. Unlike the hooks
@@ -13,11 +15,20 @@ import useVideoContext from '../useVideoContext/useVideoContext';
 export default function useParticipants() {
   const { room } = useVideoContext();
   const [participants, setParticipants] = useState(Array.from(room?.participants.values() ?? []));
+  const { experimentNameG, roleNameG, updateSubscribeRules, ifALessonStarted } = useAppState();
 
   useEffect(() => {
     if (room) {
-      const participantConnected = (participant: RemoteParticipant) =>
+      const participantConnected = (participant: RemoteParticipant) => {
         setParticipants(prevParticipants => [...prevParticipants, participant]);
+        const rule1: RecordingRule = { type: 'include', all: true };
+        const rule2: RecordingRule = { type: 'exclude', publisher: 'Researcher' };
+        const rule3: RecordingRule = { type: 'exclude', kind: 'audio' };
+        const rule4: RecordingRule = { type: 'include', kind: 'audio', publisher: 'Teacher' };
+        const rules: RecordingRules = [rule1, rule2, rule3, rule4];
+
+        updateSubscribeRules(room!.sid, roleNameG, rules);
+      };
 
       const participantDisconnected = (participant: RemoteParticipant) =>
         setParticipants(prevParticipants => prevParticipants.filter(p => p !== participant));

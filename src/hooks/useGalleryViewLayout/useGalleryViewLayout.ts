@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { GALLERY_VIEW_ASPECT_RATIO, GALLERY_VIEW_MARGIN } from '../../constants';
+import { useAppState } from '../../state';
 
 /**
  * This function determines how many columns and rows are to be used
@@ -31,6 +32,7 @@ export const layoutIsTooSmall = (
 export default function useGalleryViewLayout(participantCount: number) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [participantVideoWidth, setParticipantVideoWidth] = useState(0);
+  const { experimentNameG, roleNameG, conditionNameG, roomType } = useAppState();
 
   const updateLayout = useCallback(() => {
     if (!containerRef.current) return;
@@ -53,8 +55,9 @@ export default function useGalleryViewLayout(participantCount: number) {
         maxVideoWidth = mid;
       }
     }
+    console.log(experimentNameG);
 
-    let newParticipantVideoWidth = Math.ceil(minVideoWidth);
+    let newParticipantVideoWidth = experimentNameG === 'I-Whisper Experiment' ? 160 : Math.ceil(minVideoWidth);
 
     setParticipantVideoWidth(newParticipantVideoWidth - GALLERY_VIEW_MARGIN * 2);
   }, [participantCount]);

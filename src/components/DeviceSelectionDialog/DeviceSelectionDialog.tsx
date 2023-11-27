@@ -139,7 +139,7 @@ export default function DeviceSelectionDialog({ open, onClose }: { open: boolean
         <div className={classes.listSection}>
           <AudioOutputList />
         </div>
-        <Hidden smDown>
+        {/* <Hidden smDown>
           <Divider />
           <div className={classes.listSection}>
             <Typography variant="h6" className={classes.headline}>
@@ -147,7 +147,7 @@ export default function DeviceSelectionDialog({ open, onClose }: { open: boolean
             </Typography>
             <MaxGalleryViewParticipants />
           </div>
-        </Hidden>
+        </Hidden>*/}
       </DialogContent>
       <Divider />
       <DialogActions>

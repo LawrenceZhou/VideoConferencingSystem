@@ -27,14 +27,14 @@ const useStyles = makeStyles((theme: Theme) =>
       alignItems: 'center',
       height: 0,
       overflow: 'hidden',
-      marginBottom: '0.5em',
+      marginBottom: '0.0em',
       '& video': {
         objectFit: 'contain !important',
       },
       borderRadius: '4px',
       border: `${theme.participantBorderWidth}px solid rgb(245, 248, 255)`,
       paddingTop: `calc(${(9 / 16) * 100}% - ${theme.participantBorderWidth}px)`,
-      background: 'black',
+      background: 'transparent',
       [theme.breakpoints.down('sm')]: {
         height: theme.sidebarMobileHeight,
         width: `${(theme.sidebarMobileHeight * 16) / 9}px`,
@@ -93,20 +93,27 @@ const useStyles = makeStyles((theme: Theme) =>
     },
     screenShareIconContainer: {
       background: 'rgba(0, 0, 0, 0.5)',
-      padding: '0.18em 0.3em',
-      marginRight: '0.3em',
+      padding: '0.05em 0.05em',
+      marginRight: '0.0em',
       display: 'flex',
       '& path': {
         fill: 'white',
+      },
+      '& svg': {
+        transform: 'scale(0.8)',
       },
     },
     identity: {
       background: 'rgba(0, 0, 0, 0.5)',
       color: 'white',
-      padding: '0.18em 0.3em 0.18em 0',
+      padding: '0.0em 0.2em 0.0em 0.0em',
       margin: 0,
       display: 'flex',
       alignItems: 'center',
+      fontSize: '0.8rem',
+      '& svg': {
+        transform: 'scale(0.8)',
+      },
     },
     infoRowBottom: {
       display: 'flex',
@@ -114,11 +121,19 @@ const useStyles = makeStyles((theme: Theme) =>
       position: 'absolute',
       bottom: 0,
       left: 0,
+      fontSize: '0.8rem',
+      '& svg': {
+        transform: 'scale(0.8)',
+      },
     },
     typography: {
       color: 'white',
+      fontSize: '0.7rem',
+      '& svg': {
+        transform: 'scale(0.7)',
+      },
       [theme.breakpoints.down('sm')]: {
-        fontSize: '0.75rem',
+        fontSize: '1rem',
       },
     },
     hideParticipant: {
@@ -181,9 +196,40 @@ export default function ParticipantInfo({
   const audioTrack = useTrack(audioPublication) as LocalAudioTrack | RemoteAudioTrack | undefined;
   const isParticipantReconnecting = useParticipantIsReconnecting(participant);
 
-  const { isGalleryViewActive } = useAppState();
+  const { isGalleryViewActive, experimentNameG, conditionNameG, roleNameG } = useAppState();
 
   const classes = useStyles();
+
+  if (roleNameG === 'Researcher') {
+    return (
+      <div
+        className={clsx(classes.container, {
+          [classes.hideParticipant]: hideParticipant,
+          [classes.cursorPointer]: Boolean(onClick),
+          [classes.dominantSpeaker]: isDominantSpeaker,
+          [classes.galleryView]: isGalleryViewActive,
+        })}
+        onClick={onClick}
+        data-cy-participant={participant.identity}
+        style={{ border: '4px solid black' }}
+      >
+        <div className={classes.infoContainer}>
+          <div>{isSelected && <PinIcon />}</div>
+        </div>
+        <div className={classes.innerContainer}>
+          {(!isVideoEnabled || isVideoSwitchedOff) && <div className={classes.avatarContainer}>{<AvatarIcon />}</div>}
+          {isParticipantReconnecting && (
+            <div className={classes.reconnectingContainer}>
+              <Typography variant="body1" className={classes.typography}>
+                Reconnecting...
+              </Typography>
+            </div>
+          )}
+          {children}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -195,31 +241,35 @@ export default function ParticipantInfo({
       })}
       onClick={onClick}
       data-cy-participant={participant.identity}
+      style={{
+        border: experimentNameG === 'Nonverbal Cues Experiment' && conditionNameG === '1' ? '0px' : '4px solid black',
+      }}
     >
       <div className={classes.infoContainer}>
-        <NetworkQualityLevel participant={participant} />
+        {true || (experimentNameG === 'Nonverbal Cues Experiment' && conditionNameG === '1') ? null : (
+          <NetworkQualityLevel participant={participant} />
+        )}
         <div className={classes.infoRowBottom}>
-          {isScreenShareEnabled && (
+          {!(experimentNameG === 'Nonverbal Cues Experiment' && conditionNameG === '1') && isScreenShareEnabled && (
             <span className={classes.screenShareIconContainer}>
               <ScreenShareIcon />
             </span>
           )}
-          <span className={classes.identity}>
-            <AudioLevelIndicator audioTrack={audioTrack} />
-            <Typography variant="body1" className={classes.typography} component="span">
-              {participant.identity}
-              {isLocalParticipant && ' (You)'}
-            </Typography>
-          </span>
+
+          {!(experimentNameG === 'Nonverbal Cues Experiment' && conditionNameG === '1') && (
+            <span className={classes.identity}>
+              {!isScreenShareEnabled && <AudioLevelIndicator audioTrack={audioTrack} />}
+              <Typography variant="body1" className={classes.typography} component="span">
+                {participant.identity}
+                {isLocalParticipant && ' (You)'}
+              </Typography>
+            </span>
+          )}
         </div>
         <div>{isSelected && <PinIcon />}</div>
       </div>
       <div className={classes.innerContainer}>
-        {(!isVideoEnabled || isVideoSwitchedOff) && (
-          <div className={classes.avatarContainer}>
-            <AvatarIcon />
-          </div>
-        )}
+        {(!isVideoEnabled || isVideoSwitchedOff) && <div className={classes.avatarContainer}>{<AvatarIcon />}</div>}
         {isParticipantReconnecting && (
           <div className={classes.reconnectingContainer}>
             <Typography variant="body1" className={classes.typography}>

@@ -9,9 +9,9 @@ import useVideoContext from '../../../../hooks/useVideoContext/useVideoContext';
 const useStyles = makeStyles((theme: Theme) => ({
   container: {
     position: 'relative',
-    height: 0,
+    height: '100%',
+    width: '100%',
     overflow: 'hidden',
-    paddingTop: `${(9 / 16) * 100}%`,
     background: 'black',
   },
   innerContainer: {
@@ -65,7 +65,7 @@ export default function LocalVideoPreview({ identity }: { identity: string }) {
     <div className={classes.container}>
       <div className={classes.innerContainer}>
         {videoTrack ? (
-          <VideoTrack track={videoTrack} isLocal />
+          <VideoTrack track={videoTrack} isLocal isPreview />
         ) : (
           <div className={classes.avatarContainer}>
             <AvatarIcon />

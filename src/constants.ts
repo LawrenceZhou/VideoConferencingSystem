@@ -1,12 +1,12 @@
 export const BACKGROUND_FILTER_VIDEO_CONSTRAINTS: MediaStreamConstraints['video'] = {
-  width: 640,
-  height: 480,
+  width: { min: 640, max: 640, ideal: 640 },
+  height: { min: 360, max: 360, ideal: 360 },
   frameRate: 24,
 };
 
 export const DEFAULT_VIDEO_CONSTRAINTS: MediaStreamConstraints['video'] = {
-  width: 1280,
-  height: 720,
+  width: { min: 640, max: 640, ideal: 640 },
+  height: { min: 360, max: 360, ideal: 360 },
   frameRate: 24,
 };
 
@@ -19,4 +19,4 @@ export const SELECTED_VIDEO_INPUT_KEY = 'TwilioVideoApp-selectedVideoInput';
 export const SELECTED_BACKGROUND_SETTINGS_KEY = 'TwilioVideoApp-selectedBackgroundSettings';
 
 export const GALLERY_VIEW_ASPECT_RATIO = 9 / 16; // 16:9
-export const GALLERY_VIEW_MARGIN = 3;
+export const GALLERY_VIEW_MARGIN = 0;

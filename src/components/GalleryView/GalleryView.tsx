@@ -25,6 +25,8 @@ const useStyles = makeStyles((theme: Theme) =>
     participantContainer: {
       position: 'absolute',
       display: 'flex',
+      width: '10vw',
+      height: '10vh',
       top: CONTAINER_GUTTER,
       right: CONTAINER_GUTTER,
       bottom: CONTAINER_GUTTER,
@@ -138,6 +140,7 @@ export function GalleryView() {
               participant={participant}
               isLocalParticipant={participant === room!.localParticipant}
               isDominantSpeaker={participant === dominantSpeaker}
+              trackToShow="camera"
             />
           </div>
         ))}

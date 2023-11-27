@@ -5,7 +5,7 @@ import { makeStyles, Theme, createStyles } from '@material-ui/core/styles';
 import NoneIcon from '@material-ui/icons/NotInterestedOutlined';
 import useVideoContext from '../../../hooks/useVideoContext/useVideoContext';
 
-export type Thumbnail = 'none' | 'blur' | 'image';
+export type Thumbnail = 'none' | 'blur' | 'image' | 'transparent' | 'landmark';
 
 interface BackgroundThumbnailProps {
   thumbnail: Thumbnail;
@@ -106,6 +106,8 @@ export default function BackgroundThumbnail({ thumbnail, imagePath, name, index 
     none: NoneIcon,
     blur: BlurIcon,
     image: null,
+    transparent: null,
+    landmark: null,
   };
   const ThumbnailIcon = icons[thumbnail];
 

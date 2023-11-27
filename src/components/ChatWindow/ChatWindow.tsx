@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { makeStyles, createStyles, Theme } from '@material-ui/core/styles';
 import ChatWindowHeader from './ChatWindowHeader/ChatWindowHeader';
 import ChatInput from './ChatInput/ChatInput';
 import clsx from 'clsx';
 import MessageList from './MessageList/MessageList';
 import useChatContext from '../../hooks/useChatContext/useChatContext';
+
+import useVideoContext from '../../hooks/useVideoContext/useVideoContext';
+import useParticipantsContext from '../../hooks/useParticipantsContext/useParticipantsContext';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -36,12 +39,13 @@ const useStyles = makeStyles((theme: Theme) =>
 export default function ChatWindow() {
   const classes = useStyles();
   const { isChatWindowOpen, messages, conversation } = useChatContext();
+  const [to, setTo] = useState<string>('all');
 
   return (
     <aside className={clsx(classes.chatWindowContainer, { [classes.hide]: !isChatWindowOpen })}>
       <ChatWindowHeader />
-      <MessageList messages={messages} />
-      <ChatInput conversation={conversation!} isChatWindowOpen={isChatWindowOpen} />
+      <MessageList messages={messages} to={to} setTo={setTo} />
+      <ChatInput conversation={conversation!} isChatWindowOpen={isChatWindowOpen} to={to} setTo={setTo} />
     </aside>
   );
 }

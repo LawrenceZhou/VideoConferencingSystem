@@ -1,5 +1,6 @@
 import React, { useState, useEffect, FormEvent } from 'react';
 import DeviceSelectionScreen from './DeviceSelectionScreen/DeviceSelectionScreen';
+import IntroductionScreen from './IntroductionScreen/IntroductionScreen';
 import IntroContainer from '../IntroContainer/IntroContainer';
 import MediaErrorSnackbar from './MediaErrorSnackbar/MediaErrorSnackbar';
 import RoomNameScreen from './RoomNameScreen/RoomNameScreen';
@@ -9,23 +10,28 @@ import useVideoContext from '../../hooks/useVideoContext/useVideoContext';
 
 export enum Steps {
   roomNameStep,
+  introductionStep,
   deviceSelectionStep,
 }
 
 export default function PreJoinScreens() {
-  const { user } = useAppState();
+  const { user, roleNameG } = useAppState();
+
   const { getAudioAndVideoTracks } = useVideoContext();
   const { URLRoomName } = useParams<{ URLRoomName?: string }>();
   const [step, setStep] = useState(Steps.roomNameStep);
 
-  const [name, setName] = useState<string>(user?.displayName || '');
+  const [roleName, setRoleName] = useState<string>('');
   const [roomName, setRoomName] = useState<string>('');
+  const [conditionName, setConditionName] = useState<string>('');
+  const [conditions, setConditions] = useState<string[]>([]);
+  const [roles, setRoles] = useState<string[]>([]);
 
   const [mediaError, setMediaError] = useState<Error>();
 
   useEffect(() => {
     if (URLRoomName) {
-      setRoomName(URLRoomName);
+      //setRoomName(URLRoomName);
       if (user?.displayName) {
         setStep(Steps.deviceSelectionStep);
       }
@@ -46,10 +52,14 @@ export default function PreJoinScreens() {
     event.preventDefault();
     // If this app is deployed as a twilio function, don't change the URL because routing isn't supported.
     // @ts-ignore
-    if (!window.location.origin.includes('twil.io') && !window.STORYBOOK_ENV) {
-      window.history.replaceState(null, '', window.encodeURI(`/room/${roomName}${window.location.search || ''}`));
+    //if (!window.location.origin.includes('twil.io') && !window.STORYBOOK_ENV) {
+    //  window.history.replaceState(null, '', window.encodeURI(`/room/${roomName}${window.location.search || ''}`));
+    //}
+    if (roleNameG === 'Researcher') {
+      setStep(Steps.deviceSelectionStep);
+    } else {
+      setStep(Steps.introductionStep);
     }
-    setStep(Steps.deviceSelectionStep);
   };
 
   return (
@@ -57,16 +67,31 @@ export default function PreJoinScreens() {
       <MediaErrorSnackbar error={mediaError} />
       {step === Steps.roomNameStep && (
         <RoomNameScreen
-          name={name}
-          roomName={roomName}
-          setName={setName}
-          setRoomName={setRoomName}
+          roleName={roleName}
+          roles={roles}
+          conditions={conditions}
+          conditionName={conditionName}
+          experimentName={roomName}
+          setRoleName={setRoleName}
+          setRoles={setRoles}
+          setConditions={setConditions}
+          setConditionName={setConditionName}
+          setExperimentName={setRoomName}
           handleSubmit={handleSubmit}
         />
       )}
 
+      {step === Steps.introductionStep && (
+        <IntroductionScreen roleName={roleName} conditionName={conditionName} roomName={roomName} setStep={setStep} />
+      )}
+
       {step === Steps.deviceSelectionStep && (
-        <DeviceSelectionScreen name={name} roomName={roomName} setStep={setStep} />
+        <DeviceSelectionScreen
+          roleName={roleName}
+          conditionName={conditionName}
+          roomName={roomName}
+          setStep={setStep}
+        />
       )}
     </IntroContainer>
   );

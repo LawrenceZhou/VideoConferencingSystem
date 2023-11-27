@@ -21,6 +21,7 @@ import UnsupportedBrowserWarning from './components/UnsupportedBrowserWarning/Un
 const VideoApp = () => {
   const { error, setError } = useAppState();
   const connectionOptions = useConnectionOptions();
+  //const faceLandmarkProcessor = FaceLandmarkProcessor();
 
   return (
     <VideoProvider options={connectionOptions} onError={setError}>

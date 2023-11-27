@@ -3,6 +3,7 @@ import { ParticipantContext } from '../../components/ParticipantProvider';
 
 export default function useParticipantContext() {
   const context = useContext(ParticipantContext);
+  console.log(context);
   if (!context) {
     throw new Error('useParticipantContext must be used within a ParticipantProvider');
   }

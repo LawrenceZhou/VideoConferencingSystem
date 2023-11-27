@@ -46,7 +46,7 @@ describe('the PreJoinScreens component', () => {
   it('should update the URL to include the room name on submit', () => {
     const wrapper = shallow(<PreJoinScreens />);
 
-    const setRoomName = wrapper.find(RoomNameScreen).prop('setRoomName');
+    const setRoomName = wrapper.find(RoomNameScreen).prop('setExperimentName');
     setRoomName('Test Room 123');
 
     const handleSubmit = wrapper.find(RoomNameScreen).prop('handleSubmit');
@@ -60,7 +60,7 @@ describe('the PreJoinScreens component', () => {
     window.location = { ...window.location, origin: 'https://video-app-1234-twil.io' };
     const wrapper = shallow(<PreJoinScreens />);
 
-    const setRoomName = wrapper.find(RoomNameScreen).prop('setRoomName');
+    const setRoomName = wrapper.find(RoomNameScreen).prop('setExperimentName');
     setRoomName('Test Room 123');
 
     const handleSubmit = wrapper.find(RoomNameScreen).prop('handleSubmit');
