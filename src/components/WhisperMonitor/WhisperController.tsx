@@ -269,7 +269,7 @@ export default function WhisperController() {
   };
 
   const sendProperty = function(id: string, property: string) {
-    fetch('https://localhost:5000/token', { method: 'POST' })
+    fetch('https://34.222.53.145:5000/token', { method: 'POST' })
       .then(res => res.json())
       .then(data => {
         const syncClient = new SyncClient(data.token);
