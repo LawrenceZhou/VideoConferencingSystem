@@ -112,7 +112,7 @@ export default function AppStateProvider(props: React.PropsWithChildren<{}>) {
   const [propertyHistory, setPropertyHistory] = useState<SetPropertyType[]>([]);
 
   useEffect(() => {
-    fetch('https://34.222.53.145:5000/token', { method: 'POST' })
+    fetch('https://34.215.45.203:5000/token', { method: 'POST' })
       .then(res => res.json())
       .then(data => {
         const syncClient = new SyncClient(data.token);
