@@ -15,19 +15,15 @@ import { useAppState } from '../../state';
 export default function useParticipants() {
   const { room } = useVideoContext();
   const [participants, setParticipants] = useState(Array.from(room?.participants.values() ?? []));
-  const { experimentNameG, roleNameG, updateSubscribeRules, ifALessonStarted } = useAppState();
+  const { experimentNameG, roleNameG, ifALessonStarted, getNameTable, setNameTable } = useAppState();
 
   useEffect(() => {
     if (room) {
       const participantConnected = (participant: RemoteParticipant) => {
+        getNameTable(roleNameG).then(({}) => {
+          //setNameTable(new_table);
+        });
         setParticipants(prevParticipants => [...prevParticipants, participant]);
-        const rule1: RecordingRule = { type: 'include', all: true };
-        const rule2: RecordingRule = { type: 'exclude', publisher: 'Researcher' };
-        const rule3: RecordingRule = { type: 'exclude', kind: 'audio' };
-        const rule4: RecordingRule = { type: 'include', kind: 'audio', publisher: 'Teacher' };
-        const rules: RecordingRules = [rule1, rule2, rule3, rule4];
-
-        updateSubscribeRules(room!.sid, roleNameG, rules);
       };
 
       const participantDisconnected = (participant: RemoteParticipant) =>

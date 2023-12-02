@@ -6,8 +6,9 @@ import clsx from 'clsx';
 import ParticipantList from './ParticipantList/ParticipantList';
 import useChatContext from '../../hooks/useChatContext/useChatContext';
 import { useAppState } from '../../state';
-import WhisperMonitor from '../WhisperMonitor/WhisperMonitor';
-import WhisperController from '../WhisperMonitor/WhisperController';
+import IWhisperMonitor from '../IWhisperMonitor/IWhisperMonitor';
+import IWhisperMonitorStyle from '../IWhisperMonitor/IWhisperMonitorStyle';
+import IWhisperController from '../IWhisperMonitor/IWhisperController';
 import useVideoContext from '../../hooks/useVideoContext/useVideoContext';
 import { Paper } from '@material-ui/core';
 
@@ -46,42 +47,26 @@ export default function IWhisperWindow() {
   const { isIWhisperWindowOpen, roleNameG } = useAppState();
   const { pipWindow } = useVideoContext();
 
-  if (roleNameG !== 'Teacher') {
+  if (roleNameG === 'Teacher') {
     return (
       <aside className={clsx(classes.iWhisperWindowContainer, { [classes.hide]: !isIWhisperWindowOpen })}>
         <IWhisperHeader />
-        <div
+        <Paper
+          elevation={3}
           style={{
             padding: '5px',
             margin: '5px',
-            minHeight: '90%',
+            flex: 1,
+            textAlign: 'start',
+            width: '95%',
+            height: '100%',
+            minHeight: '30%',
+            border: '1px solid #E4E7E9',
           }}
         >
           <ParticipantList />
-        </div>
-      </aside>
-    );
-  }
-  return (
-    <aside className={clsx(classes.iWhisperWindowContainer, { [classes.hide]: !isIWhisperWindowOpen })}>
-      <IWhisperHeader />
-      <Paper
-        elevation={3}
-        style={{
-          padding: '5px',
-          margin: '5px',
-          flex: 1,
-          textAlign: 'start',
-          width: '95%',
-          height: '100%',
-          minHeight: '30%',
-          border: '1px solid #E4E7E9',
-        }}
-      >
-        <ParticipantList />
-      </Paper>
+        </Paper>
 
-      {!pipWindow && (
         <Paper
           elevation={3}
           style={{
@@ -96,11 +81,12 @@ export default function IWhisperWindow() {
             border: '1px solid #E4E7E9',
           }}
         >
-          <WhisperMonitor />
+          <IWhisperMonitor />
         </Paper>
-      )}
-      {!pipWindow && (
-        <Paper
+        <div className={classes.hide}>
+          <IWhisperMonitorStyle />
+        </div>
+        {/*<Paper
           elevation={3}
           style={{
             background: 'white',
@@ -115,8 +101,63 @@ export default function IWhisperWindow() {
           }}
         >
           <WhisperController />
+        </Paper>*/}
+      </aside>
+    );
+  }
+  if (roleNameG === 'Researcher') {
+    return (
+      <aside className={clsx(classes.iWhisperWindowContainer, { [classes.hide]: !isIWhisperWindowOpen })}>
+        <IWhisperHeader />
+        <Paper
+          elevation={3}
+          style={{
+            padding: '5px',
+            margin: '5px',
+            flex: 1,
+            textAlign: 'start',
+            width: '95%',
+            height: '100%',
+            minHeight: '30%',
+            border: '1px solid #E4E7E9',
+          }}
+        >
+          <ParticipantList />
         </Paper>
-      )}
+        <div className={classes.hide}>
+          <IWhisperMonitorStyle />
+        </div>
+        <Paper
+          elevation={3}
+          style={{
+            background: 'white',
+            margin: '5px',
+            padding: '5px',
+            flex: 1,
+            textAlign: 'start',
+            width: '95%',
+            height: '30%',
+            minHeight: '30%',
+            border: '1px solid #E4E7E9',
+          }}
+        >
+          <IWhisperController />
+        </Paper>
+      </aside>
+    );
+  }
+  return (
+    <aside className={clsx(classes.iWhisperWindowContainer, { [classes.hide]: !isIWhisperWindowOpen })}>
+      <IWhisperHeader />
+      <div
+        style={{
+          padding: '5px',
+          margin: '5px',
+          minHeight: '90%',
+        }}
+      >
+        <ParticipantList />
+      </div>
     </aside>
   );
 }

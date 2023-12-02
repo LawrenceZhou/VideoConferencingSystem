@@ -12,6 +12,7 @@ import MenuItem from '@material-ui/core/MenuItem';
 
 import useVideoContext from '../../../hooks/useVideoContext/useVideoContext';
 import useParticipantsContext from '../../../hooks/useParticipantsContext/useParticipantsContext';
+import { useAppState, IWhisperEventType } from '../../../state';
 
 const useStyles = makeStyles(theme => ({
   toContainer: {
@@ -116,6 +117,19 @@ export default function ChatInput({ conversation, isChatWindowOpen, to, setTo }:
 
   const toSelectRef = useRef<HTMLInputElement>(null);
   const { galleryViewParticipants } = useParticipantsContext();
+  const {
+    experimentNameG,
+    roleNameG,
+    whisperAct,
+    ifALessonStarted,
+    whisperState,
+    setWhisperState,
+    isBackdropOpen,
+    setIsBackdropOpen,
+    nameTable,
+  } = useAppState();
+
+  const participarticipants_ = galleryViewParticipants.filter(p => p.identity !== 'Researcher');
 
   useEffect(() => {
     if (isChatWindowOpen) {
@@ -196,9 +210,9 @@ export default function ChatInput({ conversation, isChatWindowOpen, to, setTo }:
             all
           </MenuItem>
 
-          {galleryViewParticipants.map(g => (
+          {participarticipants_.map(g => (
             <MenuItem value={g.identity} key={g.identity} selected className={classes.toSelectItem}>
-              {g.identity}
+              {Array.isArray(nameTable) && nameTable!.find(n => n.role === g.identity)!.name}
             </MenuItem>
           ))}
         </Select>

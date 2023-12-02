@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { Request, Response } from 'express';
-import { ServerlessContext, ServerlessFunction } from './types';
+import { ServerlessContext, ServerlessFunction, RuleTable } from './types';
 import Twilio from 'twilio';
 
 const {
@@ -23,7 +23,37 @@ const context: ServerlessContext = {
   ROOM_TYPE: 'group',
   CONVERSATIONS_SERVICE_SID: TWILIO_CONVERSATIONS_SERVICE_SID,
   getTwilioClient: () => twilioClient,
-  LessonStarted: false
+  LessonStarted: false,
+  initRuleTable: {
+    'Researcher': [{ type: 'include', all: true }],
+    'Teacher': [{ type: 'include', all: true }, { type: 'exclude', publisher: 'Researcher' }],
+    'Student 1': [{ type: 'include', all: true }, { type: 'exclude', publisher: 'Researcher' }],
+    'Student 2': [{ type: 'include', all: true }, { type: 'exclude', publisher: 'Researcher' }],
+    'Student 3': [{ type: 'include', all: true }, { type: 'exclude', publisher: 'Researcher' }],
+    'Student 4': [{ type: 'include', all: true }, { type: 'exclude', publisher: 'Researcher' }],
+    'Student 5': [{ type: 'include', all: true }, { type: 'exclude', publisher: 'Researcher' }],
+    'Student 6': [{ type: 'include', all: true }, { type: 'exclude', publisher: 'Researcher' }],
+  } as RuleTable,
+  lastRuleTable: {
+    'Researcher': [{ type: 'include', all: true }],
+    'Teacher': [{ type: 'include', all: true }, { type: 'exclude', publisher: 'Researcher' }],
+    'Student 1': [{ type: 'include', all: true }, { type: 'exclude', publisher: 'Researcher' }],
+    'Student 2': [{ type: 'include', all: true }, { type: 'exclude', publisher: 'Researcher' }],
+    'Student 3': [{ type: 'include', all: true }, { type: 'exclude', publisher: 'Researcher' }],
+    'Student 4': [{ type: 'include', all: true }, { type: 'exclude', publisher: 'Researcher' }],
+    'Student 5': [{ type: 'include', all: true }, { type: 'exclude', publisher: 'Researcher' }],
+    'Student 6': [{ type: 'include', all: true }, { type: 'exclude', publisher: 'Researcher' }],
+  } as RuleTable,
+  nameTable: [
+    {role:"Teacher",name:"Teacher"},
+    {role:"Researcher",name: "Researcher"},
+    {role:"Student 1",name:"Student 1"},
+    {role:"Student 2",name:"Student 2"},
+    {role:"Student 3",name:"Student 3"},
+    {role:"Student 4",name:"Student 4"},
+    {role:"Student 5",name:"Student 5"},
+    {role:"Student 6",name:"Student 6"},
+  ]
 };
 
 export function createExpressHandler(serverlessFunction: ServerlessFunction) {

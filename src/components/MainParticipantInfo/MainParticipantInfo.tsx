@@ -16,6 +16,7 @@ import usePublications from '../../hooks/usePublications/usePublications';
 import useScreenShareParticipant from '../../hooks/useScreenShareParticipant/useScreenShareParticipant';
 import useTrack from '../../hooks/useTrack/useTrack';
 import useVideoContext from '../../hooks/useVideoContext/useVideoContext';
+import { useAppState } from '../../state';
 
 const useStyles = makeStyles((theme: Theme) => ({
   container: {
@@ -118,6 +119,7 @@ interface MainParticipantInfoProps {
 export default function MainParticipantInfo({ participant, children }: MainParticipantInfoProps) {
   const classes = useStyles();
   const { room } = useVideoContext();
+  const { nameTable } = useAppState();
   const localParticipant = room!.localParticipant;
   const isLocal = localParticipant === participant;
 
@@ -152,7 +154,8 @@ export default function MainParticipantInfo({ participant, children }: MainParti
           <div className={classes.identity}>
             <AudioLevelIndicator audioTrack={audioTrack} />
             <Typography variant="body1" color="inherit">
-              {participant.identity}
+              {Array.isArray(nameTable) && nameTable!.find(n => n.role === participant.identity)!.name}
+              {/*participant.identity*/}
               {isLocal && ' (You)'}
               {screenSharePublication && ' - Screen'}
             </Typography>

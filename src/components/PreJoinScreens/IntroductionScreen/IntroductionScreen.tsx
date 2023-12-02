@@ -16,7 +16,7 @@ import { Steps } from '../PreJoinScreens';
 
 const useStyles = makeStyles((theme: Theme) => ({
   gutterBottom: {
-    marginBottom: '1em',
+    marginBottom: '0.2em',
   },
   inputContainer: {
     display: 'flex',
@@ -72,9 +72,16 @@ interface IntroductionScreenProps {
   conditionName: string;
   roomName: string;
   setStep: (step: Steps) => void;
+  nameReal: string;
 }
 
-export default function IntroductionScreen({ roleName, conditionName, roomName, setStep }: IntroductionScreenProps) {
+export default function IntroductionScreen({
+  roleName,
+  conditionName,
+  roomName,
+  setStep,
+  nameReal,
+}: IntroductionScreenProps) {
   const classes = useStyles();
   const { user } = useAppState();
 
@@ -83,7 +90,9 @@ export default function IntroductionScreen({ roleName, conditionName, roomName, 
       <Typography variant="h5" className={classes.gutterBottom}>
         Introduction Video
       </Typography>
-      <Typography variant="body1">Watch the introduction video before we start.</Typography>
+      <Typography variant="body1">
+        <strong>{nameReal}</strong>, Let's watch the introduction video before we start.
+      </Typography>
       <Typography variant="body1">
         Experiment: <strong>{roomName}</strong>, Condition: <strong>{conditionName}</strong>, Role:{' '}
         <strong>{roleName}</strong>

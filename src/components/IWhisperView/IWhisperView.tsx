@@ -25,9 +25,31 @@ import PiPWindow from '../PiPWindow/PiPWindow';
 //import usePiPContext from '../../hooks/usePiPContext/usePiPContext';
 import VideoTrack from '../VideoTrack/VideoTrack';
 import { LocalAudioTrack, LocalVideoTrack, RemoteAudioTrack, RemoteVideoTrack } from 'twilio-video';
-import WhisperMonitor from '../WhisperMonitor/WhisperMonitor';
-import WhisperController from '../WhisperMonitor/WhisperController';
+import IWhisperMonitor from '../IWhisperMonitor/IWhisperMonitor';
+import IWhisperController from '../IWhisperMonitor/IWhisperController';
 import { RecordingRule, RecordingRules, RoomType } from '../../types';
+import MicIcon from '../../icons/MicIcon';
+import Menu from '../MenuBarIWhisper/Menu/Menu';
+import ToggleAudioButton from '../Buttons/ToggleAudioButton/ToggleAudioButton';
+import ToggleAudioButtonIWhisper from '../Buttons/ToggleAudioButtonIWhisper/ToggleAudioButtonIWhisper';
+import ToggleChatButton from '../Buttons/ToggleChatButton/ToggleChatButton';
+import ToggleIWhisperButton from '../Buttons/ToggleIWhisperButton/ToggleIWhisperButton';
+import ToggleVideoButton from '../Buttons/ToggleVideoButton/ToggleVideoButton';
+import useRoomState from '../../hooks/useRoomState/useRoomState';
+
+export interface IWhisperEventType {
+  id: string;
+  category: string;
+  timestamp: number;
+  from: string;
+  to: string;
+}
+
+export interface SetPropertyType {
+  id: string;
+  property: string;
+  timestamp: number;
+}
 
 const URLs = ['https://forms.gle/yL6VBUdSvM9eUYaL7', 'https://forms.gle/1BPVYHXf7Q2kADoWA'];
 
@@ -47,13 +69,21 @@ const useStyles = makeStyles((theme: Theme) => {
         gridTemplateColumns: `100%`,
         gridTemplateRows: `calc(100% - ${totalMobileSidebarHeight}) ${totalMobileSidebarHeight}`,
       },
+    },
+    iframeContainer: {
+      width: '100%',
+      height: '100%',
+      backgroud: 'rgb(255, 255, 255)',
+    },
 
-      iframeContainer: {
-        width: '100%',
-        height: '100%',
-        backgroud: 'rgb(255, 255, 255)',
+    iconContainer: {
+      padding: '0.05em 0.05em',
+      display: 'flex',
+      '& svg': {
+        transform: 'scale(1.5)',
       },
     },
+
     rightDrawerOpen: { gridTemplateColumns: `1fr ${theme.sidebarNewWidth}px ${theme.rightDrawerWidth}px` },
   };
 });
@@ -79,11 +109,19 @@ export function useSetSpeakerViewOnScreenShare(
 }
 
 export default function IWhisperView() {
-  //const classes = useStyles();
+  const classes = useStyles();
   const { isChatWindowOpen, setIsChatWindowOpen } = useChatContext();
-  const { isBackgroundSelectionOpen, room, isSharingScreen, isPiPSupported, pipWindow } = useVideoContext();
-  const { localTracks } = useVideoContext();
+  const {
+    isBackgroundSelectionOpen,
+    room,
+    isSharingScreen,
+    isPiPSupported,
+    pipWindow,
+    localTracks,
+  } = useVideoContext();
+  const roomState = useRoomState();
 
+  const isReconnecting = roomState === 'reconnecting';
   const {
     isGalleryViewActive,
     setIsGalleryViewActive,
@@ -92,8 +130,11 @@ export default function IWhisperView() {
     roleNameG,
     isIWhisperWindowOpen,
     setIsIWhisperWindowOpen,
-    ifALessonStarted,
-    updateSubscribeRules,
+    syncClient,
+    eventHistory,
+    setEventHistory,
+    propertyHistory,
+    setPropertyHistory,
   } = useAppState();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -108,145 +149,132 @@ export default function IWhisperView() {
   // the user is still free to switch back to gallery view.
   //useSetSpeakerViewOnScreenShare(screenShareParticipant, room, setIsGalleryViewActive, isGalleryViewActive);
   useEffect(() => {
-    if (
-      experimentNameG === 'I-Whisper Experiment' &&
-      conditionNameG === '1' &&
-      roleNameG !== 'Researcher' &&
-      roleNameG !== 'Teacher'
-    ) {
-      console.log(ifALessonStarted('notchecked'));
-      const rule1: RecordingRule = { type: 'include', all: true };
-      const rule2: RecordingRule = { type: 'exclude', publisher: 'Researcher' };
-      const rule3: RecordingRule = { type: 'exclude', kind: 'audio' };
-      const rule4: RecordingRule = { type: 'include', kind: 'audio', publisher: 'Teacher' };
-      const rules: RecordingRules = [rule1, rule2, rule3, rule4];
+    if (conditionNameG === '1') {
+      if (syncClient) {
+        syncClient.list('whisperActionList').then(list => {
+          list.on('itemAdded', e => {
+            //setActions((actions) => actions.concat(e.item.data.value.action));
+            //console.log(e.item.data)
+            let timestamp = Date.now();
+            let lastEvent = null;
+            if (e.item.data.action !== 'setProperty') {
+              if (eventHistory && eventHistory.length > 0 && eventHistory[eventHistory.length - 1]) {
+                lastEvent = eventHistory[eventHistory.length - 1];
+                if (
+                  lastEvent.from === e.item.data.from &&
+                  lastEvent.to === e.item.data.to &&
+                  lastEvent.category === e.item.data.action &&
+                  Math.abs(lastEvent.timestamp - timestamp) < 1000
+                ) {
+                  //nothing
+                } else {
+                  let newEvent = {
+                    category: e.item.data.action,
+                    timestamp: timestamp,
+                    from: e.item.data.from,
+                    to: e.item.data.to,
+                    id: e.item.data.id,
+                  } as IWhisperEventType;
+                  console.log('event, ', newEvent);
+                  setEventHistory([...eventHistory, newEvent]);
+                }
+              } else {
+                let newEvent = {
+                  category: e.item.data.action,
+                  timestamp: timestamp,
+                  from: e.item.data.from,
+                  to: e.item.data.to,
+                  id: e.item.data.id,
+                } as IWhisperEventType;
+                console.log('event, ', newEvent);
 
-      updateSubscribeRules(room!.sid, roleNameG, rules);
+                setEventHistory([...eventHistory, newEvent]);
+              }
+            }
+
+            let lastProperty = null;
+            if (e.item.data.action === 'setProperty') {
+              if (propertyHistory && propertyHistory.length > 0 && propertyHistory[propertyHistory.length - 1]) {
+                lastProperty = propertyHistory[propertyHistory.length - 1];
+                if (lastProperty.id === e.item.data.id && Math.abs(lastProperty.timestamp - timestamp) < 1000) {
+                  //do nthing
+                } else {
+                  let newSetProperty = {
+                    id: e.item.data.id,
+                    timestamp: timestamp,
+                    property: e.item.data.property,
+                  } as SetPropertyType;
+                  console.log(newSetProperty);
+                  setPropertyHistory([...propertyHistory, newSetProperty]);
+                }
+              } else {
+                let newSetProperty = {
+                  id: e.item.data.id,
+                  timestamp: timestamp,
+                  property: e.item.data.property,
+                } as SetPropertyType;
+                console.log(newSetProperty);
+                setPropertyHistory([...propertyHistory, newSetProperty]);
+              }
+            }
+
+            if (e.item.data.action == 'whisperStart') {
+              /*let newEvent = {category: e.item.data.action, timestamp: timestamp, from: e.item.data.from, to: e.item.data.to} as IWhisperEventType;
+                            setEventHistory([...eventHistory, newEvent]);
+                            console.log("whisperStart, from: ", e.item.data.from, ", to: ", e.item.data.to, roleNameG);
+                            if (e.item.data.to === roleNameG){
+                              //setIsIWhispered(true);
+                              console.log("1st dgfdg");
+                              setIsIWhisperedBy(e.item.data.from);
+
+                            }*/
+            }
+
+            if (e.item.data.action == 'whisperEnd') {
+              /*let newEvent = {category: e.item.data.action, timestamp: timestamp, from: e.item.data.from, to: e.item.data.to} as IWhisperEventType;
+                            setEventHistory([...eventHistory, newEvent]);
+                            console.log("whisperEnd, from: ", e.item.data.from, ", to: ", e.item.data.to, ", to: ",roleNameG);
+                        if (e.item.data.to === roleNameG){
+                              //etIsIWhispered(false);
+                              setIsIWhisperedBy("");
+                            }*/
+            }
+          });
+        });
+      }
     }
-  }, []);
+  }, [syncClient]);
 
   if (roleNameG === 'Researcher') {
     VideoRoomMonitor.openMonitor();
     return (
-      <div>
-        <div
-          style={{
-            padding: '0px',
-            gap: '10px',
-            position: 'absolute',
-            display: 'flex',
-            margin: '0 auto',
-            alignContent: 'end',
-            flexWrap: 'wrap',
-            justifyContent: 'end',
-            zIndex: 8,
-            opacity: 1.0,
-          }}
-        >
-          <Grid
-            rows={['xxsmall', 'small', 'small']}
-            columns={['xsmall', 'medium', 'medium']}
-            gap="small"
-            areas={[
-              { name: 'blank', start: [0, 0], end: [0, 0] },
-              { name: 'columnTitleCamera', start: [1, 0], end: [1, 0] },
-              { name: 'columnTitleScreen', start: [2, 0], end: [2, 0] },
-              { name: 'rowTitleTeacher', start: [0, 1], end: [0, 1] },
-              { name: 'rowTitleStudent', start: [0, 2], end: [0, 2] },
-              { name: 'TeacherCamera', start: [1, 1], end: [1, 1] },
-              { name: 'TeacherScreen', start: [2, 1], end: [2, 1] },
-              { name: 'StudentCamera', start: [1, 2], end: [1, 2] },
-              { name: 'StudentScreen', start: [2, 2], end: [2, 2] },
-            ]}
-          >
-            <Box gridArea="blank" background="transparent" />
-            <Box gridArea="columnTitleCamera" background="light-5">
-              Camera
-            </Box>
-            <Box gridArea="columnTitleScreen" background="light-5">
-              Screen
-            </Box>
-            <Box gridArea="rowTitleTeacher" background="light-5">
-              Teacher
-            </Box>
-            <Box gridArea="rowTitleStudent" background="light-5">
-              Student
-            </Box>
-
-            {Array.from<PT>(room!.participants.values()).map(participant => (
-              <>
-                <Box
-                  gridArea={participant.identity + 'Camera'}
-                  background="light-2"
-                  width="medium"
-                  height="small"
-                  style={{ alignContent: 'center', justifyContent: 'center' }}
-                >
-                  <div
-                    style={{
-                      width: '80%',
-                      height: 'auto',
-                      position: 'relative',
-                      left: '10%',
-                      background: 'rgba(0, 0, 0, 0.80)',
-                    }}
-                  >
-                    <Participant
-                      participant={participant}
-                      isLocalParticipant={false}
-                      isDominantSpeaker={false}
-                      trackToShow="camera"
-                    />
-                  </div>
-                </Box>
-                <Box
-                  gridArea={participant.identity + 'Screen'}
-                  background="light-2"
-                  width="medium"
-                  height="small"
-                  style={{ alignContent: 'center', justifyContent: 'center' }}
-                >
-                  <div
-                    style={{
-                      width: '80%',
-                      height: 'auto',
-                      position: 'relative',
-                      left: '10%',
-                      background: 'rgba(0, 0, 0, 0.80)',
-                    }}
-                  >
-                    <Participant
-                      participant={participant}
-                      isLocalParticipant={false}
-                      isDominantSpeaker={false}
-                      trackToShow="screen"
-                    />
-                  </div>
-                </Box>
-              </>
-            ))}
-          </Grid>
-        </div>
-      </div>
+      <>
+        <MainParticipant />
+        <ParticipantList />
+      </>
     );
   }
-  VideoRoomMonitor.openMonitor();
 
   return (
     <>
       <MainParticipant />
       <ParticipantList />
 
-      {isPiPSupported ? (
+      {roleNameG === 'Teacher' && isPiPSupported ? (
         pipWindow ? (
           <PiPWindow pipWindow={pipWindow}>
+            <div style={{ display: roleNameG !== 'Teacher' ? 'flex' : 'none' }}>
+              <ToggleAudioButtonIWhisper disabled={isReconnecting} className={classes.iconContainer} />:
+            </div>
+
             <div
               style={{
                 background: 'black',
                 flex: 1,
                 textAlign: 'center',
                 width: '100%',
-                height: '40%',
+                height: '50%',
+                display: roleNameG === 'Teacher' ? 'block' : 'none',
               }}
             >
               <Participant
@@ -265,22 +293,11 @@ export default function IWhisperView() {
                 flex: 1,
                 textAlign: 'start',
                 width: '100%',
-                height: '30%',
+                height: '50%',
+                display: roleNameG === 'Teacher' ? 'block' : 'none',
               }}
             >
-              <WhisperMonitor />
-            </div>
-            <div
-              style={{
-                background: 'white',
-                padding: '5px',
-                flex: 1,
-                textAlign: 'start',
-                width: '100%',
-                height: '30%',
-              }}
-            >
-              <WhisperController />
+              <IWhisperMonitor />
             </div>
           </PiPWindow>
         ) : null

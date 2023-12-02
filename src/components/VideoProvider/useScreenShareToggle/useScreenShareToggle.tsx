@@ -31,9 +31,9 @@ export default function useScreenShareToggle(
   //const PiPContext = createContext<IPiPContext | undefined>(undefined);
 
   useEffect(() => {
-    if (isSharing) {
-      requestPipWindow(240, 180);
-    } else {
+    if (isSharing && !pipWindow) {
+      requestPipWindow(320, 320);
+    } else if (!isSharing && pipWindow) {
       closePipWindow();
     }
   }, [isSharing]);
@@ -47,14 +47,17 @@ export default function useScreenShareToggle(
 
   const requestPipWindow = async (width: number, height: number) => {
     // We don't want to allow multiple requests.
+    let pipOptions = {
+      width: 100,
+      height: 100,
+      initialAspectRatio: width / height,
+      lockAspectRatio: true,
+    };
     if (pipWindow != null) {
       return;
     }
 
-    const pip = await window.documentPictureInPicture.requestWindow({
-      width,
-      height,
-    });
+    const pip = await window.documentPictureInPicture.requestWindow(pipOptions);
 
     // Detect when window is closed by user
     pip.addEventListener('pagehide', () => {

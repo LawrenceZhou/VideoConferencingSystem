@@ -22,13 +22,23 @@ const useStyles = makeStyles(() =>
 
 interface MessageInfoProps {
   author: string;
+  authorID: string;
   dateCreated: string;
   isLocalParticipant: boolean;
   to: string;
+  toID: string;
   setTo: (to: string) => void;
 }
 
-export default function MessageInfo({ author, dateCreated, isLocalParticipant, to, setTo }: MessageInfoProps) {
+export default function MessageInfo({
+  author,
+  authorID,
+  dateCreated,
+  isLocalParticipant,
+  to,
+  toID,
+  setTo,
+}: MessageInfoProps) {
   const classes = useStyles();
 
   const changeSendTo = (newTo: string) => {
@@ -40,7 +50,7 @@ export default function MessageInfo({ author, dateCreated, isLocalParticipant, t
       {isLocalParticipant ? (
         <div>You</div>
       ) : (
-        <div className={classes.otherContainer} onClick={() => changeSendTo(author)}>
+        <div className={classes.otherContainer} onClick={() => changeSendTo(authorID)}>
           {author}
         </div>
       )}
@@ -48,7 +58,7 @@ export default function MessageInfo({ author, dateCreated, isLocalParticipant, t
       {to === 'You' ? (
         <div>You</div>
       ) : (
-        <div className={classes.otherContainer} onClick={() => changeSendTo(to)}>
+        <div className={classes.otherContainer} onClick={() => changeSendTo(toID)}>
           {to}
         </div>
       )}

@@ -1,6 +1,7 @@
 /* global Twilio Runtime */
 'use strict';
 
+
 module.exports.handler = async (context, event, callback) => {
   const authHandler = require(Runtime.getAssets()['/auth-handler.js'].path);
   authHandler(context, event, callback);
@@ -8,7 +9,7 @@ module.exports.handler = async (context, event, callback) => {
   let response = new Twilio.Response();
   response.appendHeader('Content-Type', 'application/json');
 
-  const { room_sid, who, rules } = event;
+  const { room_sid } = event;
 
   if (typeof room_sid === 'undefined') {
     response.setStatusCode(400);
@@ -21,7 +22,7 @@ module.exports.handler = async (context, event, callback) => {
     return callback(null, response);
   }
 
-  if (typeof rules === 'undefined') {
+  /*if (typeof rules === 'undefined') {
     response.setStatusCode(400);
     response.setBody({
       error: {
@@ -30,22 +31,12 @@ module.exports.handler = async (context, event, callback) => {
       },
     });
     return callback(null, response);
-  }
+  }*/
+///
+  const lastNameTable = context.nameTable;
 
-  const client = context.getTwilioClient();
-
-  try {
-
-    console.log(room_sid, client.video.rooms(room_sid).participants);
-    const subscribeRulesResponse = await client.video.rooms(room_sid).participants( who ).subscribeRules.update({ rules });
-    response.setStatusCode(200);
-    response.setBody(subscribeRulesResponse);
-  } catch (err) {
-    console.error('Error updating subscribe rules:');
-    console.error(err);
-    response.setStatusCode(500);
-    response.setBody({ error: { message: err.message, code: err.code } });
-  }
+  response.setStatusCode(200);
+  response.setBody({status: "success", name_table: context.nameTable});
 
   callback(null, response);
 };

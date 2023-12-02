@@ -67,7 +67,7 @@ export default function ToggleChatButton() {
 
   const toggleChatWindow = () => {
     setIsChatWindowOpen(!isChatWindowOpen);
-    setIsBackgroundSelectionOpen(false);
+    //setIsBackgroundSelectionOpen(false);
   };
 
   useEffect(() => {

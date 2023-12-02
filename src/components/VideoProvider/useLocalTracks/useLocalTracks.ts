@@ -220,6 +220,7 @@ export default function useLocalTracks() {
         // in cases where the user's video is disabled.
         // }
         if (newAudioTrack) {
+          //newAudioTrack.disable();
           setAudioTrack(newAudioTrack);
           if (newAudioTrack.noiseCancellation) {
             setIsKrispEnabled(true);

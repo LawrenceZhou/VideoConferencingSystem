@@ -196,7 +196,7 @@ export default function ParticipantInfo({
   const audioTrack = useTrack(audioPublication) as LocalAudioTrack | RemoteAudioTrack | undefined;
   const isParticipantReconnecting = useParticipantIsReconnecting(participant);
 
-  const { isGalleryViewActive, experimentNameG, conditionNameG, roleNameG } = useAppState();
+  const { isGalleryViewActive, experimentNameG, conditionNameG, roleNameG, nameTable } = useAppState();
 
   const classes = useStyles();
 
@@ -260,7 +260,7 @@ export default function ParticipantInfo({
             <span className={classes.identity}>
               {!isScreenShareEnabled && <AudioLevelIndicator audioTrack={audioTrack} />}
               <Typography variant="body1" className={classes.typography} component="span">
-                {participant.identity}
+                {Array.isArray(nameTable) && nameTable!.find(n => n.role === participant.identity)!.name}
                 {isLocalParticipant && ' (You)'}
               </Typography>
             </span>

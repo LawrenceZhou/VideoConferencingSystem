@@ -34,7 +34,7 @@ export default function IWhisperWindowHeader() {
 
   return (
     <div className={classes.container}>
-      <div className={classes.text}>I Whisper</div>
+      <div className={classes.text}>I-Whisper 接耳</div>
       <button className={classes.closeIWhisperWindow} onClick={() => setIsIWhisperWindowOpen(false)}>
         <CloseIcon />
       </button>

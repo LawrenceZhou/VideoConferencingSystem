@@ -64,24 +64,31 @@ const useStyles = makeStyles({
 export default function ToggleIWhisperButton() {
   const classes = useStyles();
   const [shouldAnimate, setShouldAnimate] = useState(false);
+  const [newWhisper, setNewWhisper] = useState(false);
   const [started, setStarted] = useState(false);
-  const {
-    isIWhisperWindowOpen,
-    setIsIWhisperWindowOpen,
-    updateSubscribeRules,
-    roleNameG,
-    operateALesson,
-  } = useAppState();
+  const [lastState, setLastState] = useState<string>('IDLE');
+  const { isIWhisperWindowOpen, setIsIWhisperWindowOpen, whisperState } = useAppState();
   const { setIsBackgroundSelectionOpen, room } = useVideoContext();
 
   const toggleIWhisperWindow = () => {
-    if (roleNameG === 'Teacher') {
-      pressStart();
-    }
     //updateRecordingRules(room!.sid, []);
     setIsIWhisperWindowOpen(!isIWhisperWindowOpen);
     setIsBackgroundSelectionOpen(false);
   };
+
+  useEffect(() => {
+    if (lastState !== whisperState.state) {
+      if (whisperState.state === 'RECEIVING') {
+        setNewWhisper(true);
+      } else {
+        setNewWhisper(false);
+      }
+    }
+    if (!isIWhisperWindowOpen && whisperState.state === 'RECEIVING') {
+      setShouldAnimate(true);
+    }
+    setLastState(whisperState.state);
+  }, [whisperState, isIWhisperWindowOpen]);
 
   useEffect(() => {
     if (shouldAnimate) {
@@ -89,26 +96,11 @@ export default function ToggleIWhisperButton() {
     }
   }, [shouldAnimate]);
 
-  const pressStart = function() {
-    operateALesson(room!.sid, !started);
-    if (!started) {
-      const rule1: RecordingRule = { type: 'include', all: true };
-      const rule2: RecordingRule = { type: 'exclude', publisher: 'Researcher' };
-      const rule3: RecordingRule = { type: 'exclude', kind: 'audio' };
-      const rule4: RecordingRule = { type: 'include', kind: 'audio', publisher: 'Teacher' };
-      const rules: RecordingRules = [rule1, rule2, rule3, rule4];
-
-      updateSubscribeRules(room!.sid, roleNameG, rules);
-      setStarted(true);
-    } else {
-      const rule1: RecordingRule = { type: 'include', all: true };
-      const rule2: RecordingRule = { type: 'exclude', publisher: 'Researcher' };
-      const rules: RecordingRules = [rule1, rule2];
-
-      updateSubscribeRules(room!.sid, roleNameG, rules);
-      setStarted(false);
+  useEffect(() => {
+    if (newWhisper) {
+      setTimeout(() => setNewWhisper(false), 30000);
     }
-  };
+  }, [newWhisper]);
 
   return (
     <Button
@@ -119,7 +111,7 @@ export default function ToggleIWhisperButton() {
         <div className={classes.iconContainer}>
           <AssistListening />
           <div className={clsx(classes.ring, { [classes.animateRing]: shouldAnimate })} />
-          <div className={clsx(classes.circle, { [classes.hasUnreadMessages]: true })} />
+          <div className={clsx(classes.circle, { [classes.hasUnreadMessages]: newWhisper })} />
         </div>
       }
     ></Button>

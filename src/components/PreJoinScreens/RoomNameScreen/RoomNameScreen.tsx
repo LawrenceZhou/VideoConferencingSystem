@@ -31,6 +31,7 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   textFieldContainer: {
     width: '100%',
+    height: '60px,',
   },
   continueButton: {
     [theme.breakpoints.down('sm')]: {
@@ -51,6 +52,8 @@ interface RoomNameScreenProps {
   setConditions: (conditions: string[]) => void;
   setExperimentName: (experimentName: string) => void;
   handleSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  nameReal: string;
+  setNameReal: (nameReal: string) => void;
 }
 
 export default function RoomNameScreen({
@@ -65,6 +68,8 @@ export default function RoomNameScreen({
   setConditionName,
   setExperimentName,
   handleSubmit,
+  nameReal,
+  setNameReal,
 }: RoomNameScreenProps) {
   const classes = useStyles();
   const { user, experimentNameG, setExperimentNameG, setConditionNameG, setRoleNameG } = useAppState();
@@ -77,6 +82,9 @@ export default function RoomNameScreen({
     },
   ];
 
+  const handleNameChange = (name: string) => {
+    setNameReal(name);
+  };
   const handleRoleNameChange = (rName: string) => {
     setRoleName(rName);
     setRoleNameG(rName);
@@ -107,6 +115,7 @@ export default function RoomNameScreen({
         Join an Experiment
       </Typography>
       <Typography variant="body1">Select the experiment, the condition, and the role.</Typography>
+      <Typography variant="body1">Input your name.</Typography>
       <form onSubmit={handleSubmit}>
         <div className={classes.inputContainer}>
           <div className={classes.textFieldContainer}>
@@ -119,7 +128,7 @@ export default function RoomNameScreen({
               onChange={e => handleExperimentNameChange(e.target.value as string)}
               value={experimentName}
               variant="outlined"
-              style={{ minWidth: 250 }}
+              style={{ minWidth: 270, minHeight: 40 }}
             >
               {experiments.map(e => (
                 <MenuItem value={e.name[0]} key={e.name[0]}>
@@ -139,7 +148,7 @@ export default function RoomNameScreen({
               onChange={e => handleConditionNameChange(e.target.value as string)}
               value={conditionName}
               variant="outlined"
-              style={{ minWidth: 120 }}
+              style={{ minWidth: 90, minHeight: 40 }}
             >
               {conditions!.map(c => (
                 <MenuItem value={c} key={c}>
@@ -160,7 +169,7 @@ export default function RoomNameScreen({
               onChange={e => handleRoleNameChange(e.target.value as string)}
               value={roleName}
               variant="outlined"
-              style={{ minWidth: 250 }}
+              style={{ minWidth: 180, minHeight: 40 }}
             >
               {roles!.map(r => (
                 <MenuItem value={r} key={r}>
@@ -168,6 +177,20 @@ export default function RoomNameScreen({
                 </MenuItem>
               ))}
             </Select>
+          </div>
+
+          <div className={classes.textFieldContainer}>
+            <Typography variant="subtitle2" gutterBottom>
+              Name
+            </Typography>
+
+            <TextField
+              disabled={!experimentName}
+              id="outlined-basic"
+              onChange={e => handleNameChange(e.target.value as string)}
+              inputProps={{ style: { minWidth: 180, minHeight: 28 } }}
+              value={nameReal}
+            />
           </div>
         </div>
         <Grid container justifyContent="flex-end">

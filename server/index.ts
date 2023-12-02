@@ -24,14 +24,29 @@ const recordingRulesFunction: ServerlessFunction = require('@twilio-labs/plugin-
   .handler;
 const recordingRulesEndpoint = createExpressHandler(recordingRulesFunction);
 
-const subscribeRulesFunction: ServerlessFunction = require('./subscribeRules').handler;
-const subscribeRulesEndpoint = createExpressHandler(subscribeRulesFunction);
+//const subscribeRulesFunction: ServerlessFunction = require('./subscribeRules').handler;
+//const subscribeRulesEndpoint = createExpressHandler(subscribeRulesFunction);
 
 const operateALessonFunction: ServerlessFunction = require('./operateALesson').handler;
 const operateALessonEndpoint = createExpressHandler(operateALessonFunction);
 
-const ifALessonStartedFunction: ServerlessFunction = require('./ifALessonStarted').handler;
-const ifALessonStartedEndpoint = createExpressHandler(ifALessonStartedFunction);
+//const ifALessonStartedFunction: ServerlessFunction = require('./ifALessonStarted').handler;
+//const ifALessonStartedEndpoint = createExpressHandler(ifALessonStartedFunction);
+
+const whisperActFunction: ServerlessFunction = require('./whisperAct').handler;
+const whisperActEndpoint = createExpressHandler(whisperActFunction);
+
+const tokenSyncFunction: ServerlessFunction = require('./tokenSync').handler;
+const tokenSyncEndpoint = createExpressHandler(tokenSyncFunction);
+
+const toggleAudioFunction: ServerlessFunction = require('./toggleAudio').handler;
+const toggleAudioEndpoint = createExpressHandler(toggleAudioFunction);
+
+const registerNameFunction: ServerlessFunction = require('./registerName').handler;
+const registerNameEndpoint = createExpressHandler(registerNameFunction);
+
+const getNameTableFunction: ServerlessFunction = require('./getNameTable').handler;
+const getNameTableEndpoint = createExpressHandler(getNameTableFunction);
 
 const noopMiddleware: RequestHandler = (_, __, next) => next();
 const authMiddleware =
@@ -39,9 +54,14 @@ const authMiddleware =
 
 app.all('/token', authMiddleware, tokenEndpoint);
 app.all('/recordingrules', authMiddleware, recordingRulesEndpoint);
-app.all('/subscribeRules', authMiddleware, subscribeRulesEndpoint);
+//app.all('/subscribeRules', authMiddleware, subscribeRulesEndpoint);
 app.all('/operateALesson', authMiddleware, operateALessonEndpoint);
-app.all('/ifALessonStarted', authMiddleware, ifALessonStartedEndpoint);
+//app.all('/ifALessonStarted', authMiddleware, ifALessonStartedEndpoint);
+app.all('/tokenSync', authMiddleware, tokenSyncEndpoint);
+app.all('/whisperAct', authMiddleware, whisperActEndpoint);
+app.all('/toggleAudio', authMiddleware, toggleAudioEndpoint);
+app.all('/registerName', authMiddleware, registerNameEndpoint);
+app.all('/getNameTable', authMiddleware, getNameTableEndpoint);
 /*
 app.all('/subscribeRules', (req, res) => {
   client.video.rooms('RMXXXX').participants.get('Adam')

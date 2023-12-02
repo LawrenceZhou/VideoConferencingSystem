@@ -13,6 +13,8 @@ interface SnackbarProps {
   variant?: 'error' | 'warning' | 'info';
   open: boolean;
   handleClose?: () => void;
+  anchorVertical?: 'top' | 'bottom';
+  anchorHorizontal?: 'center' | 'left' | 'right';
 }
 
 const useStyles = makeStyles((theme: Theme) => ({
@@ -52,7 +54,15 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
 }));
 
-export default function Snackbar({ headline, message, variant, open, handleClose }: SnackbarProps) {
+export default function Snackbar({
+  headline,
+  message,
+  variant,
+  open,
+  handleClose,
+  anchorVertical = 'top',
+  anchorHorizontal = 'right',
+}: SnackbarProps) {
   const classes = useStyles();
 
   const handleOnClose = (_: React.SyntheticEvent | React.MouseEvent, reason?: string) => {
@@ -66,8 +76,8 @@ export default function Snackbar({ headline, message, variant, open, handleClose
   return (
     <MUISnackbar
       anchorOrigin={{
-        vertical: 'top',
-        horizontal: 'right',
+        vertical: anchorVertical,
+        horizontal: anchorHorizontal,
       }}
       open={open}
       onClose={handleOnClose}

@@ -11,10 +11,12 @@ import useRoomState from '../../hooks/useRoomState/useRoomState';
 import useVideoContext from '../../hooks/useVideoContext/useVideoContext';
 import { Typography, Grid, Hidden } from '@material-ui/core';
 import ToggleAudioButton from '../Buttons/ToggleAudioButton/ToggleAudioButton';
+import ToggleAudioButtonIWhisper from '../Buttons/ToggleAudioButtonIWhisper/ToggleAudioButtonIWhisper';
 import ToggleChatButton from '../Buttons/ToggleChatButton/ToggleChatButton';
 import ToggleIWhisperButton from '../Buttons/ToggleIWhisperButton/ToggleIWhisperButton';
 import ToggleVideoButton from '../Buttons/ToggleVideoButton/ToggleVideoButton';
 import ToggleScreenShareButton from '../Buttons/ToggleScreenShareButton/ToggleScreenShareButton';
+import OperateLessonButton from '../Buttons/OperateLessonButton/OperateLessonButton';
 import { useAppState } from '../../state';
 import Divider from '@material-ui/core/Divider';
 import useChatContext from '../../hooks/useChatContext/useChatContext';
@@ -90,9 +92,12 @@ export default function MenuBarIWhisper() {
   const participants = useParticipants();
   const { isChatWindowOpen, setIsChatWindowOpen, conversation, hasUnreadMessages } = useChatContext();
 
-  const logoWidth = isChatWindowOpen || isIWhisperWindowOpen ? '320px' : '0px';
-  const controlWidth = isChatWindowOpen ? window.innerWidth - 320 : window.innerWidth;
-  const logoDisplay = isChatWindowOpen || isIWhisperWindowOpen ? 'block' : 'none';
+  // const logoWidth = isChatWindowOpen || isIWhisperWindowOpen ? '320px' : '0px';
+  const logoWidth = 0;
+  //const controlWidth = isChatWindowOpen ? window.innerWidth - 320 : window.innerWidth;
+  const controlWidth = window.innerWidth;
+  //const logoDisplay = isChatWindowOpen || isIWhisperWindowOpen ? 'block' : 'none';
+  const logoDisplay = 'none';
   //const { } = usePiPWindowContext();
 
   return (
@@ -108,14 +113,18 @@ export default function MenuBarIWhisper() {
         }}
       >
         <div style={{ display: 'flex' }}>
-          <ToggleAudioButton disabled={isReconnecting} className={classes.iconContainer} />
+          {conditionNameG === '1' ? (
+            <ToggleAudioButtonIWhisper disabled={isReconnecting} className={classes.iconContainer} />
+          ) : (
+            <ToggleAudioButton disabled={isReconnecting} className={classes.iconContainer} />
+          )}
           <ToggleVideoButton disabled={isReconnecting} className={classes.iconContainer} />
 
           <Menu />
         </div>
 
         <div style={{ display: 'flex', gap: '5px' }}>
-          {isSharingScreen && !pipWindow && <OpenPiPButton />}
+          <OpenPiPButton />
           {!isMobile && (
             <ToggleScreenShareButton disabled={isReconnecting || room!.localParticipant.identity !== 'Teacher'} />
           )}
@@ -130,14 +139,14 @@ export default function MenuBarIWhisper() {
         </div>
       </div>
 
-      <div className="title" style={{ width: 320, display: logoDisplay, paddingLeft: 30 }}>
+      {/*<div className="title" style={{ width: 320, display: logoDisplay, paddingLeft: 30 }}>
         <Typography variant="h6">
           <strong>{experimentNameG}</strong>
         </Typography>
         <Typography variant="subtitle1">
           Condition {conditionNameG} | {roleNameG}
         </Typography>
-      </div>
+      </div>*/}
     </footer>
   );
 }

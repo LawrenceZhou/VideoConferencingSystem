@@ -24,10 +24,29 @@ export interface SetPropertyType {
   timestamp: number;
 }
 
+interface StateWithSubject {
+  state: string;
+  subject: string;
+}
+
+export interface NameRole {
+  role: string;
+  name: string;
+}
+
+export interface WhisperInstanceType {
+  id: string;
+  from: string;
+  to: string;
+  property: string;
+  ttl: number;
+}
+
 export interface StateContextType {
   error: TwilioError | Error | null;
   setError(error: TwilioError | Error | null): void;
   getToken(name: string, room: string, passcode?: string): Promise<{ room_type: RoomType; token: string }>;
+  getTokenSync(): Promise<{ tokenSync: string }>;
   user?: User | null | { displayName: undefined; photoURL: undefined; passcode?: string };
   signIn?(passcode?: string): Promise<void>;
   signOut?(): Promise<void>;
@@ -39,8 +58,11 @@ export interface StateContextType {
   dispatchSetting: React.Dispatch<SettingsAction>;
   roomType?: RoomType;
   updateRecordingRules(room_sid: string, rules: RecordingRules): Promise<object>;
-  updateSubscribeRules(room_sid: string, who: string, rules: RecordingRules): Promise<object>;
+  whisperAct(room_sid: string, from: string, to: string, action: string): Promise<object>;
+  toggleAudio(room_sid: string, who: string, operation: string, state: string, whisperTo: string): Promise<object>;
   operateALesson(room_sid: string, toStart: boolean): Promise<object>;
+  registerName(name: string, role: string): Promise<object>;
+  getNameTable(room_sid: string): Promise<{ name_table: NameRole[]; status: string }>;
   ifALessonStarted(room_sid: string): Promise<object>;
   isGalleryViewActive: boolean;
   setIsGalleryViewActive: React.Dispatch<React.SetStateAction<boolean>>;
@@ -70,7 +92,20 @@ export interface StateContextType {
   setEventHistory(eventHistory: IWhisperEventType[]): void;
   propertyHistory: SetPropertyType[];
   setPropertyHistory(propertyHistory: SetPropertyType[]): void;
-
+  micWarningOn: boolean;
+  setMicWarningOn(micWarningOn: boolean): void;
+  syncClient: SyncClient | null;
+  setSyncClient(syncClient: SyncClient | null): void;
+  whisperState: StateWithSubject;
+  setWhisperState(whisperState: StateWithSubject): void;
+  isBackdropOpen: boolean;
+  setIsBackdropOpen(isBackdropOpen: boolean): void;
+  nameTable: NameRole[];
+  setNameTable(nameTable: NameRole[]): void;
+  whisperInstanceList: WhisperInstanceType[];
+  setWhisperInstanceList(whisperInstanceList: WhisperInstanceType[]): void;
+  gotAWhisperWhenIWWindowClosed: boolean;
+  setGotAWhisperWhenIWWindowClosed(gotAWhisperWhenIWWindowClosed: boolean): void;
   //  faceLandmarkProcessor: FaceLandmarkProcessor;
 }
 
@@ -98,7 +133,7 @@ export default function AppStateProvider(props: React.PropsWithChildren<{}>) {
   const [isPreStage, setIsPreStage] = useState<boolean>(true);
   const [maxGalleryViewParticipants, setMaxGalleryViewParticipants] = useLocalStorageState(
     'max-gallery-participants-key',
-    6
+    8
   );
 
   const [isKrispEnabled, setIsKrispEnabled] = useState(false);
@@ -110,104 +145,37 @@ export default function AppStateProvider(props: React.PropsWithChildren<{}>) {
   const [isIWhisperedBy, setIsIWhisperedBy] = useState<string>('');
   const [eventHistory, setEventHistory] = useState<IWhisperEventType[]>([]);
   const [propertyHistory, setPropertyHistory] = useState<SetPropertyType[]>([]);
+  const [micWarningOn, setMicWarningOn] = useState<boolean>(false);
+  const [syncClient, setSyncClient] = useState<SyncClient | null>(null);
+  const [whisperState, setWhisperState] = useState<StateWithSubject>({
+    state: 'IDLE',
+    subject: roleNameG,
+  });
+  const [isBackdropOpen, setIsBackdropOpen] = useState<boolean>(false);
+  const [whisperInstanceList, setWhisperInstanceList] = useState<WhisperInstanceType[]>([]);
+  const [gotAWhisperWhenIWWindowClosed, setGotAWhisperWhenIWWindowClosed] = useState<boolean>(false);
 
-  useEffect(() => {
-    fetch('https://34.222.53.145:5000/token', { method: 'POST' })
+  const initNameTable: NameRole[] = [
+    { role: 'Teacher', name: 'Teacher' },
+    { role: 'Researcher', name: 'Researcher' },
+    { role: 'Student 1', name: 'Student 1' },
+    { role: 'Student 2', name: 'Student 2' },
+    { role: 'Student 3', name: 'Student 3' },
+    { role: 'Student 4', name: 'Student 4' },
+    { role: 'Student 5', name: 'Student 5' },
+    { role: 'Student 6', name: 'Student 6' },
+  ];
+  const [nameTable, setNameTable] = useState<NameRole[]>(initNameTable);
+  /*useEffect(() => {
+    //fetch('https://34.222.53.145:5000/token', { method: 'POST' })
+    fetch('https://192.168.3.5:3000/tokenSync', { method: 'POST' })
       .then(res => res.json())
       .then(data => {
+        console.log(data);
         const syncClient = new SyncClient(data.token);
-        syncClient.list('actionList').then(list => {
-          list.on('itemAdded', e => {
-            //setActions((actions) => actions.concat(e.item.data.value.action));
-            //console.log(e.item.data)
-            let timestamp = Date.now();
-            let lastEvent = null;
-            if (e.item.data.action !== 'setProperty') {
-              if (eventHistory && eventHistory.length > 0 && eventHistory[eventHistory.length - 1]) {
-                lastEvent = eventHistory[eventHistory.length - 1];
-                if (
-                  lastEvent.from === e.item.data.from &&
-                  lastEvent.to === e.item.data.to &&
-                  lastEvent.category === e.item.data.action &&
-                  Math.abs(lastEvent.timestamp - timestamp) < 1000
-                ) {
-                  //nothing
-                } else {
-                  let newEvent = {
-                    category: e.item.data.action,
-                    timestamp: timestamp,
-                    from: e.item.data.from,
-                    to: e.item.data.to,
-                    id: e.item.data.id,
-                  } as IWhisperEventType;
-                  console.log(newEvent);
-                  setEventHistory([...eventHistory, newEvent]);
-                }
-              } else {
-                let newEvent = {
-                  category: e.item.data.action,
-                  timestamp: timestamp,
-                  from: e.item.data.from,
-                  to: e.item.data.to,
-                  id: e.item.data.id,
-                } as IWhisperEventType;
-                console.log(newEvent);
-
-                setEventHistory([...eventHistory, newEvent]);
-              }
-            }
-
-            let lastProperty = null;
-            if (e.item.data.action === 'setProperty') {
-              if (propertyHistory && propertyHistory.length > 0 && propertyHistory[propertyHistory.length - 1]) {
-                lastProperty = propertyHistory[propertyHistory.length - 1];
-                if (lastProperty.id === e.item.data.id && Math.abs(lastProperty.timestamp - timestamp) < 1000) {
-                  //do nthing
-                } else {
-                  let newSetProperty = {
-                    id: e.item.data.id,
-                    timestamp: timestamp,
-                    property: e.item.data.property,
-                  } as SetPropertyType;
-                  console.log(newSetProperty);
-                  setPropertyHistory([...propertyHistory, newSetProperty]);
-                }
-              } else {
-                let newSetProperty = {
-                  id: e.item.data.id,
-                  timestamp: timestamp,
-                  property: e.item.data.property,
-                } as SetPropertyType;
-                console.log(newSetProperty);
-                setPropertyHistory([...propertyHistory, newSetProperty]);
-              }
-            }
-
-            if (e.item.data.action == 'whisperStart') {
-              /*let newEvent = {category: e.item.data.action, timestamp: timestamp, from: e.item.data.from, to: e.item.data.to} as IWhisperEventType;
-                            setEventHistory([...eventHistory, newEvent]);
-                            console.log("whisperStart, from: ", e.item.data.from, ", to: ", e.item.data.to, roleNameG);
-                            if (e.item.data.to === roleNameG){
-                              //setIsIWhispered(true);
-                              console.log("1st dgfdg");
-                              setIsIWhisperedBy(e.item.data.from);
-
-                            }*/
-            }
-
-            if (e.item.data.action == 'whisperEnd') {
-              /*let newEvent = {category: e.item.data.action, timestamp: timestamp, from: e.item.data.from, to: e.item.data.to} as IWhisperEventType;
-                            setEventHistory([...eventHistory, newEvent]);
-                            console.log("whisperEnd, from: ", e.item.data.from, ", to: ", e.item.data.to, ", to: ",roleNameG);
-                        if (e.item.data.to === roleNameG){
-                              //etIsIWhispered(false);
-                              setIsIWhisperedBy("");
-                            }*/
-            }
-          });
-        });
+        
       });
-  }, []);
+  }, []);*/
 
   let contextValue = {
     error,
@@ -246,6 +214,20 @@ export default function AppStateProvider(props: React.PropsWithChildren<{}>) {
     setEventHistory,
     propertyHistory,
     setPropertyHistory,
+    micWarningOn,
+    setMicWarningOn,
+    syncClient,
+    setSyncClient,
+    whisperState,
+    setWhisperState,
+    isBackdropOpen,
+    setIsBackdropOpen,
+    nameTable,
+    setNameTable,
+    whisperInstanceList,
+    setWhisperInstanceList,
+    gotAWhisperWhenIWWindowClosed,
+    setGotAWhisperWhenIWWindowClosed,
     //   faceLandmarkProcessor,
   } as StateContextType;
 
@@ -277,6 +259,17 @@ export default function AppStateProvider(props: React.PropsWithChildren<{}>) {
           }),
         }).then(res => res.json());
       },
+      getTokenSync: async () => {
+        const endpoint = '/tokenSync';
+
+        return fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({}),
+        }).then(res => res.json());
+      },
       updateRecordingRules: async (room_sid, rules) => {
         const endpoint = process.env.REACT_APP_TOKEN_ENDPOINT || '/recordingrules';
 
@@ -303,26 +296,51 @@ export default function AppStateProvider(props: React.PropsWithChildren<{}>) {
           .catch(err => setError(err));
       },
 
-      updateSubscribeRules: async (room_sid, who, rules) => {
+      whisperAct: async (room_sid, from, to, action) => {
         console.log(process.env.REACT_APP_TOKEN_ENDPOINT);
-        const endpoint = '/subscribeRules';
+        const endpoint = '/whisperAct';
 
         return fetch(endpoint, {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ room_sid, who, rules }),
+          body: JSON.stringify({ room_sid, from, to, action }),
           method: 'POST',
         })
           .then(async res => {
             const jsonResponse = await res.json();
 
             if (!res.ok) {
-              const recordingError = new Error(
-                jsonResponse.error?.message || 'There was an error updating subscribe rules'
+              const whisperError = new Error(
+                jsonResponse.error?.message || 'There was an error updating whisper states'
               );
-              recordingError.code = jsonResponse.error?.code;
-              return Promise.reject(recordingError);
+              whisperError.code = jsonResponse.error?.code;
+              return Promise.reject(whisperError);
+            }
+
+            return jsonResponse;
+          })
+          .catch(err => setError(err));
+      },
+
+      toggleAudio: async (room_sid, who, operation, state, whisperTo) => {
+        console.log(process.env.REACT_APP_TOKEN_ENDPOINT);
+        const endpoint = '/toggleAudio';
+
+        return fetch(endpoint, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ room_sid, who, operation, state, whisperTo }),
+          method: 'POST',
+        })
+          .then(async res => {
+            const jsonResponse = await res.json();
+
+            if (!res.ok) {
+              const toggleError = new Error(jsonResponse.error?.message || 'There was an error toggling audio');
+              toggleError.code = jsonResponse.error?.code;
+              return Promise.reject(toggleError);
             }
 
             return jsonResponse;
@@ -383,6 +401,64 @@ export default function AppStateProvider(props: React.PropsWithChildren<{}>) {
           })
           .catch(err => setError(err));
       },
+
+      registerName: async (name, role) => {
+        console.log(process.env.REACT_APP_TOKEN_ENDPOINT);
+        const endpoint = '/registerName';
+
+        return fetch(endpoint, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+
+          body: JSON.stringify({ name, role }),
+
+          method: 'POST',
+        })
+          .then(async res => {
+            const jsonResponse = await res.json();
+
+            if (!res.ok) {
+              const recordingError = new Error(
+                jsonResponse.error?.message || 'There was an error registering the name'
+              );
+              recordingError.code = jsonResponse.error?.code;
+              return Promise.reject(recordingError);
+            }
+
+            return jsonResponse;
+          })
+          .catch(err => setError(err));
+      },
+
+      getNameTable: async room_sid => {
+        console.log(process.env.REACT_APP_TOKEN_ENDPOINT);
+        const endpoint = '/getNameTable';
+
+        return fetch(endpoint, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+
+          body: JSON.stringify({ room_sid }),
+
+          method: 'POST',
+        })
+          .then(async res => {
+            const jsonResponse = await res.json();
+
+            if (!res.ok) {
+              const recordingError = new Error(
+                jsonResponse.error?.message || 'There was an error fetching the name table'
+              );
+              recordingError.code = jsonResponse.error?.code;
+              return Promise.reject(recordingError);
+            }
+
+            return jsonResponse;
+          })
+          .catch(err => setError(err));
+      },
     };
   }
 
@@ -402,6 +478,23 @@ export default function AppStateProvider(props: React.PropsWithChildren<{}>) {
       });
   };
 
+  const getTokenSync: StateContextType['getTokenSync'] = () => {
+    setIsFetching(true);
+    return contextValue
+      .getTokenSync()
+      .then(res => {
+        //const syncClient_ = new SyncClient(res.tokenSync);
+        //setSyncClient(syncClient_);
+
+        setIsFetching(false);
+        return res;
+      })
+      .catch(err => {
+        setError(err);
+        setIsFetching(false);
+        return Promise.reject(err);
+      });
+  };
   const updateRecordingRules: StateContextType['updateRecordingRules'] = (room_sid, rules) => {
     setIsFetching(true);
     return contextValue
@@ -417,10 +510,25 @@ export default function AppStateProvider(props: React.PropsWithChildren<{}>) {
       });
   };
 
-  const updateSubscribeRules: StateContextType['updateSubscribeRules'] = (room_sid, who, rules) => {
+  const whisperAct: StateContextType['whisperAct'] = (room_sid, from, to, action) => {
     setIsFetching(true);
     return contextValue
-      .updateSubscribeRules(room_sid, who, rules)
+      .whisperAct(room_sid, from, to, action)
+      .then(res => {
+        setIsFetching(false);
+        return res;
+      })
+      .catch(err => {
+        setError(err);
+        setIsFetching(false);
+        return Promise.reject(err);
+      });
+  };
+
+  const toggleAudio: StateContextType['toggleAudio'] = (room_sid, who, operation, state, whisperTo) => {
+    setIsFetching(true);
+    return contextValue
+      .toggleAudio(room_sid, who, operation, state, whisperTo)
       .then(res => {
         setIsFetching(false);
         return res;
@@ -447,6 +555,46 @@ export default function AppStateProvider(props: React.PropsWithChildren<{}>) {
       });
   };
 
+  const registerName: StateContextType['registerName'] = (name, role) => {
+    setIsFetching(true);
+    return contextValue
+      .registerName(name, role)
+      .then(res => {
+        setIsFetching(false);
+        return res;
+      })
+      .catch(err => {
+        setError(err);
+        setIsFetching(false);
+        return Promise.reject(err);
+      });
+  };
+
+  const getNameTable: StateContextType['getNameTable'] = room_sid => {
+    setIsFetching(true);
+    return contextValue
+      .getNameTable(room_sid)
+      .then(res => {
+        setIsFetching(false);
+        console.log('get name table, ', res);
+        if (Array.isArray(res.name_table)) {
+          var newTable_: NameRole[] = [];
+          res.name_table.forEach(n => {
+            console.log(n);
+            const newNameRole: NameRole = { name: n.name, role: n.role };
+            newTable_.push(newNameRole);
+          });
+          console.log(newTable_);
+          setNameTable(newTable_);
+        }
+        return res;
+      })
+      .catch(err => {
+        setError(err);
+        setIsFetching(false);
+        return Promise.reject(err);
+      });
+  };
   const ifALessonStarted: StateContextType['ifALessonStarted'] = room_sid => {
     setIsFetching(true);
     return contextValue
@@ -468,9 +616,12 @@ export default function AppStateProvider(props: React.PropsWithChildren<{}>) {
         ...contextValue,
         getToken,
         updateRecordingRules,
-        updateSubscribeRules,
+        whisperAct,
+        toggleAudio,
         operateALesson,
         ifALessonStarted,
+        registerName,
+        getNameTable,
       }}
     >
       {props.children}

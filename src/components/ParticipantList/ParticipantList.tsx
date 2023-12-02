@@ -52,7 +52,7 @@ export default function ParticipantList() {
   const isRemoteParticipantScreenSharing = screenShareParticipant && screenShareParticipant !== localParticipant;
 
   if (speakerViewParticipants.length === 0) return null; // Don't render this component if there are no remote participants.
-
+  let speakerViewParticipants_ = speakerViewParticipants.filter(s => s.identity !== 'Researcher');
   return (
     <aside
       className={clsx(classes.container, {
@@ -62,7 +62,7 @@ export default function ParticipantList() {
       <div className={classes.scrollContainer}>
         <div className={classes.innerScrollContainer}>
           {true && <Participant participant={localParticipant} isLocalParticipant={true} trackToShow="camera" />}
-          {speakerViewParticipants.map(participant => {
+          {speakerViewParticipants_.map(participant => {
             const isSelected = participant === selectedParticipant;
             const hideParticipant =
               participant === mainParticipant && participant !== screenShareParticipant && !isSelected;

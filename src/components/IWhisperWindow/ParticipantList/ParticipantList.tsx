@@ -10,7 +10,7 @@ import { Participant } from 'twilio-video';
 import { makeStyles } from '@material-ui/core/styles';
 import { deepOrange, deepPurple, red, blue, pink, green, lime } from '@material-ui/core/colors';
 import useParticipants from '../../../hooks/useParticipants/useParticipants';
-import { Box, Meter, Stack, Spinner, Grommet, InfiniteScroll } from 'grommet';
+import { Box, Meter, Stack, Spinner, Grommet, InfiniteScroll, Menu } from 'grommet';
 import { AssistListening, Blog, Blank } from 'grommet-icons';
 import { SyncClient } from 'twilio-sync';
 import { useAppState, IWhisperEventType } from '../../../state';
@@ -18,9 +18,16 @@ import { ThemeType } from 'grommet/themes';
 import Divider from '@material-ui/core/Divider';
 import { RecordingRule, RecordingRules, RoomType } from '../../../types';
 import MessageListScrollContainer from '../../ChatWindow/MessageList/MessageListScrollContainer/MessageListScrollContainer';
+import useLocalAudioToggle from '../../../hooks/useLocalAudioToggle/useLocalAudioToggle';
 
 import List from '@material-ui/core/List';
 import ListItem, { ListItemProps } from '@material-ui/core/ListItem';
+import PiPWindow from '../../PiPWindow/PiPWindow';
+import ToggleAudioButtonIWhisper from '../../Buttons/ToggleAudioButtonIWhisper/ToggleAudioButtonIWhisper';
+import Select from '@material-ui/core/Select';
+import MenuItem from '@material-ui/core/MenuItem';
+import ArrowDropUpIcon from '@material-ui/icons/ArrowDropUp';
+import ArrowDropDownIcon from '@material-ui/icons/ArrowDropDown';
 
 const theme: ThemeType = {
   spinner: {
@@ -32,10 +39,52 @@ const theme: ThemeType = {
 };
 
 const useStyles = makeStyles(theme => ({
+  divider: {
+    // Theme Color, or use css color in quote
+    background: '#5B5D62',
+    paddingTop: '5px',
+    paddingBottom: '5px',
+  },
   root: {
     display: 'flex',
     '& > *': {
       margin: theme.spacing(1),
+    },
+  },
+  iconContainer: {
+    cursor: 'pointer',
+    maxWidth: '50px',
+    minWidth: '50px',
+    //padding: '0.0em 0.0em',
+    display: 'flex',
+    '& svg': {
+      transform: 'scale(1.5)',
+    },
+  },
+
+  toLabel: {
+    height: '40px',
+  },
+  toSelect: {
+    height: '40px',
+    minWidth: '80px',
+
+    background: 'transparent',
+    '&:focused': {
+      background: 'transparent',
+    },
+    '&:selected': {
+      background: 'transparent',
+    },
+  },
+  toSelectItem: {
+    minWidth: '80px',
+    height: '40px',
+    '&:focused': {
+      background: 'transparent',
+    },
+    '&:selected': {
+      background: 'transparent',
     },
   },
 
@@ -88,12 +137,30 @@ const getFormattedTime = (message?: Message) =>
   message?.dateCreated?.toLocaleTimeString('en-us', { hour: 'numeric', minute: 'numeric' }).toLowerCase();
 
 export default function ParticipantList() {
-  const { room } = useVideoContext();
-  const { experimentNameG, roleNameG, updateSubscribeRules, ifALessonStarted } = useAppState();
+  const { room, isPiPSupported, pipWindow } = useVideoContext();
+  const {
+    experimentNameG,
+    roleNameG,
+    whisperAct,
+    ifALessonStarted,
+    whisperState,
+    setWhisperState,
+    isBackdropOpen,
+    setIsBackdropOpen,
+    nameTable,
+  } = useAppState();
+  const [isAudioEnabled, toggleAudioEnabled] = useLocalAudioToggle();
+  //let beginSound = new Audio("./sounds/begin.mp3");
+  //let endSound = new Audio("./sounds/end.mp3");
+  const beginRef = React.createRef<HTMLAudioElement>();
+  const endRef = React.createRef<HTMLAudioElement>();
+  //const endRef = React.useRef(null);
 
   const localParticipant = room!.localParticipant;
   const participants = useParticipants();
-  const participantList = Array.from<Participant>([localParticipant]).concat(participants);
+  const participantList = Array.from<Participant>([localParticipant])
+    .concat(participants)
+    .filter(p => p.identity !== 'Researcher');
   const classes = useStyles();
   const styleSheet: Array<StyleInfo> = [
     { identity: 'Teacher', represent: 'TE', color: classes.purple },
@@ -109,7 +176,7 @@ export default function ParticipantList() {
   let counter = 0; //100ms as a unit
   //const [counter, setCounter] = useState<number>(0);
 
-  let longestWhisperTime = 150;
+  let longestWhisperTime = 100;
   let longestWaitTime = 50;
   let timerinterval = useRef((null as unknown) as any);
 
@@ -117,11 +184,20 @@ export default function ParticipantList() {
   //const [whisperingTo, setWhisperingTo] = useState<string>("");
   //state: IDLE, STARTING, SENDING, (ENDING), RECEIVING
   //const [whisperState, setWhisperState] = useState<StateWithSubject>({state:"IDLE", subject:localParticipant.identity});
-  const [whisperState, setWhisperState] = useState<StateWithSubject>({
+  /*const [whisperState, setWhisperState] = useState<StateWithSubject>({
     state: 'IDLE',
     subject: localParticipant.identity,
-  });
-  const { isIWhisperedBy, setIsIWhisperedBy, eventHistory, setEventHistory } = useAppState();
+  });*/
+  const {
+    isIWhisperWindowOpen,
+    isIWhisperedBy,
+    setIsIWhisperedBy,
+    eventHistory,
+    setEventHistory,
+    syncClient,
+    gotAWhisperWhenIWWindowClosed,
+    setGotAWhisperWhenIWWindowClosed,
+  } = useAppState();
   const [effectiveEvent, setEffectiveEvent] = useState<IWhisperEventType | null>(null);
 
   /*if (isIWhisperedBy !== "") {
@@ -142,13 +218,13 @@ export default function ParticipantList() {
         if (currentState === 'SENDING' || currentState === 'RECEIVING') {
           if (counter >= longestWhisperTime) {
             console.log('whisper over time');
-            returnToIDLE(toIdentity);
+            returnToIDLE(toIdentity, currentState);
             sendSignal('whisperEnd', toIdentity);
           }
         } else {
           if (counter >= longestWaitTime) {
             console.log('wait over time');
-            returnToIDLE(toIdentity);
+            returnToIDLE(toIdentity, whisperState.state);
             sendSignal('CANCEL', toIdentity);
           }
           //whisperEnd(null, whisperingTo);
@@ -163,6 +239,10 @@ export default function ParticipantList() {
       setMs(0);
     }
   };
+  useEffect(() => {
+    if (nameTable) {
+    }
+  }, [nameTable]);
 
   useEffect(() => {
     if (eventHistory && eventHistory.length > 0 && eventHistory[eventHistory.length - 1]) {
@@ -171,6 +251,23 @@ export default function ParticipantList() {
       if (lastEvent.to === localParticipant.identity) {
         if (lastEvent.category === 'whisperStart') {
           if (whisperState.state === 'IDLE') {
+            whisperAct(room!.sid, localParticipant.identity, lastEvent.from, 'start');
+            if (!isAudioEnabled) {
+              setIsBackdropOpen(true);
+              setTimeout(() => {
+                setIsBackdropOpen(false);
+              }, 2000);
+            }
+            if (!isIWhisperWindowOpen) {
+              setIsBackdropOpen(true);
+
+              setGotAWhisperWhenIWWindowClosed(true);
+              setTimeout(() => {
+                setIsBackdropOpen(false);
+
+                setGotAWhisperWhenIWWindowClosed(false);
+              }, 2000);
+            }
             sendSignal('ACK', lastEvent.from);
             turnToState('RECEIVING', lastEvent.from);
           } else {
@@ -181,6 +278,19 @@ export default function ParticipantList() {
 
         if (lastEvent.category === 'ACK') {
           if (whisperState.state === 'STARTING' && lastEvent.from === whisperState.subject) {
+            whisperAct(room!.sid, localParticipant.identity, lastEvent.from, 'start');
+            if (beginRef && beginRef.current) {
+              beginRef.current
+                .play()
+                .then(() => {})
+                .catch((error: any) => {
+                  console.info('User has not interacted with document yet.');
+                });
+            }
+            if (!isAudioEnabled) {
+              toggleAudioEnabled();
+            }
+
             turnToState('SENDING', lastEvent.from);
           } else {
             return;
@@ -189,14 +299,14 @@ export default function ParticipantList() {
 
         if (lastEvent.category === 'BUSY') {
           if (whisperState.state === 'STARTING' && lastEvent.from === whisperState.subject) {
-            returnToIDLE(lastEvent.from);
+            returnToIDLE(lastEvent.from, whisperState.state);
           } else {
             return;
           }
         }
         if (lastEvent.category === 'CANCEL') {
           if (lastEvent.from === whisperState.subject) {
-            returnToIDLE(lastEvent.from);
+            returnToIDLE(lastEvent.from, whisperState.state);
           } else {
             return;
           }
@@ -204,7 +314,14 @@ export default function ParticipantList() {
 
         if (lastEvent.category === 'whisperEnd') {
           if (lastEvent.from === whisperState.subject) {
-            returnToIDLE(lastEvent.from);
+            whisperAct(room!.sid, localParticipant.identity, lastEvent.from, 'end');
+            if (isAudioEnabled) {
+              setIsBackdropOpen(true);
+              setTimeout(() => {
+                setIsBackdropOpen(false);
+              }, 2000);
+            }
+            returnToIDLE(lastEvent.from, whisperState.state);
           } else {
             return;
           }
@@ -231,7 +348,19 @@ export default function ParticipantList() {
     //}
     setWhisperState({ state: nextState, subject: toIdentity });
     console.log(whisperState);
-    if (nextState === 'SENDING' || nextState === 'RECEIVING') {
+    if (nextState === 'RECEIVING') {
+      if (beginRef && beginRef.current) {
+        beginRef.current
+          .play()
+          .then(() => {})
+          .catch((error: any) => {
+            console.info('User has not interacted with document yet.');
+          });
+      }
+      whisperAct(room!.sid, toIdentity, roleNameG, 'start');
+    }
+    //whisperStarts(room!.sid, roleNameG, toIdentity);
+    /*if (nextState === 'SENDING' || nextState === 'RECEIVING') {
       const rule1: RecordingRule = { type: 'include', all: true };
       const rule2: RecordingRule = { type: 'exclude', publisher: 'Researcher' };
       const rule3: RecordingRule = { type: 'exclude', kind: 'audio' };
@@ -240,13 +369,14 @@ export default function ParticipantList() {
       const rules: RecordingRules = [rule1, rule2, rule3, rule4, rule5];
 
       updateSubscribeRules(room!.sid, roleNameG, rules);
-    }
+
+    }*/
     //clearInterval(timerinterval.current);
     //setWhisperState(nextState);
     //setWhisperingTo(toIdentity);
   };
 
-  const returnToIDLE = function(toIdentity: string) {
+  const returnToIDLE = function(toIdentity: string, lastState: string) {
     setWhisperState({ state: 'IDLE', subject: localParticipant.identity });
     //setWhisperState("IDLE");
     //setWhisperingTo("");
@@ -255,41 +385,78 @@ export default function ParticipantList() {
     //setCounter(0);
     counter = 0;
     clearInterval(timerinterval.current);
-    const rule1: RecordingRule = { type: 'include', all: true };
+    if (lastState === 'RECEIVING') {
+      if (endRef && endRef.current) {
+        endRef.current
+          .play()
+          .then(() => {})
+          .catch((error: any) => {
+            console.info('User has not interacted with document yet.');
+          });
+      }
+      if (isAudioEnabled) {
+        toggleAudioEnabled();
+      }
+
+      setIsBackdropOpen(true);
+      setTimeout(() => {
+        setIsBackdropOpen(false);
+      }, 2000);
+
+      whisperAct(room!.sid, toIdentity, roleNameG, 'end');
+    }
+    if (lastState === 'SENDING') {
+      if (endRef && endRef.current) {
+        endRef.current
+          .play()
+          .then(() => {})
+          .catch((error: any) => {
+            console.info('User has not interacted with document yet.');
+          });
+      }
+
+      if (isAudioEnabled) {
+        toggleAudioEnabled();
+      }
+
+      setIsBackdropOpen(true);
+      setTimeout(() => {
+        setIsBackdropOpen(false);
+      }, 2000);
+    }
+    /*const rule1: RecordingRule = { type: 'include', all: true };
     const rule2: RecordingRule = { type: 'exclude', publisher: 'Researcher' };
     const rule3: RecordingRule = { type: 'exclude', kind: 'audio' };
     const rule4: RecordingRule = { type: 'include', kind: 'audio', publisher: 'Teacher' };
     const rules: RecordingRules = [rule1, rule2, rule3, rule4];
 
-    updateSubscribeRules(room!.sid, roleNameG, rules);
+    updateSubscribeRules(room!.sid, roleNameG, rules);*/
   };
 
   const sendSignal = function(signal: string, to: string) {
-    fetch('https://34.222.53.145:5000/token', { method: 'POST' })
-      .then(res => res.json())
-      .then(data => {
-        const syncClient = new SyncClient(data.token);
-        syncClient.list('actionList').then(list => {
-          list
-            .push(
-              {
-                action: signal,
-                from: localParticipant.identity,
-                to: to,
-                id: localParticipant.identity + Date.now().toString(),
-                user: 'XXX',
-              },
-              { ttl: 86400 }
-            )
-            .then(function(item) {
-              console.log('List Item push() successful, item index:' + item.index + ', value: ', item.data);
-            })
-            .catch(function(error) {
-              returnToIDLE(to);
-              console.error('List Item push() failed', error);
-            });
-        });
+    //fetch('https://34.222.53.145:5000/token', { method: 'POST' })
+    if (syncClient) {
+      syncClient.list('whisperActionList').then(list => {
+        list
+          .push(
+            {
+              action: signal,
+              from: localParticipant.identity,
+              to: to,
+              id: localParticipant.identity + Date.now().toString(),
+              user: 'XXX',
+            },
+            { ttl: 86400 }
+          )
+          .then(function(item) {
+            console.log('List Item push() successful, item index:' + item.index + ', value: ', item.data);
+          })
+          .catch(function(error) {
+            //returnToIDLE(to);
+            console.error('List Item push() failed', error);
+          });
       });
+    }
   };
 
   //if()
@@ -315,7 +482,7 @@ export default function ParticipantList() {
     if (whisperState.state === 'RECEIVING' || whisperState.state === 'SENDING') {
       if (whisperState.subject === toIdentity) {
         sendSignal('whisperEnd', toIdentity);
-        returnToIDLE(toIdentity);
+        returnToIDLE(toIdentity, whisperState.state);
       } else {
         //do nothing
         return;
@@ -325,7 +492,7 @@ export default function ParticipantList() {
     if (whisperState.state === 'STARTING') {
       if (whisperState.subject === toIdentity) {
         sendSignal('CANCEL', toIdentity);
-        returnToIDLE(toIdentity);
+        returnToIDLE(toIdentity, whisperState.state);
       } else {
         //do nothing
         return;
@@ -342,7 +509,7 @@ export default function ParticipantList() {
   //let percent = 100;
   let opacityStart = 0.25;
   let opacityEnd = 1.0;
-  let halfLoop = 15;
+  let halfLoop = longestWhisperTime / 10;
   let opacityStep = (opacityEnd - opacityStart) / halfLoop;
 
   let iconOpacity = 0;
@@ -373,85 +540,166 @@ export default function ParticipantList() {
     message = 'Ending...';
   }
 
+  const toSelectRef = useRef<HTMLInputElement>(null);
+  const [to, setTo] = useState<string>('');
+  const handleToChange = (tName: string) => {
+    setTo(tName);
+    toSelectRef.current?.blur();
+    (document.activeElement as HTMLElement).blur();
+  };
+
   return (
-    <Box overflow="scroll" height="100%" width="95%">
-      <InfiniteScroll items={participantList}>
-        {(item: any) => {
-          //const time = getFormattedTime(message)!;
-          //const previousTime = getFormattedTime(messages[idx - 1]);
-
-          // Display the MessageInfo component when the author or formatted timestamp differs from the previous message
-          //const shouldDisplayMessageInfo = time !== previousTime || message.author !== messages[idx - 1]?.author;
-
-          //const isLocalParticipant = localParticipant.identity === message.author;
-          const style = styleSheet.find(s => s.identity === item.identity)!;
-          const isSelf = item.identity === localParticipant.identity;
-          const isTalkingTo = !isSelf && item.identity === whisperState.subject;
-          const meterColor = isTalkingTo && whisperState.state === 'SENDING' ? 'brand' : 'transparent';
-          let cursorStyle = 'pointer';
-          if (isSelf) {
-            cursorStyle = 'not-allowed';
-          }
-          if (whisperState.state !== 'IDLE' && !isTalkingTo) {
-            cursorStyle = 'not-allowed';
-          }
-
-          //const percent =   talkingpPercent;
-          //const opacity =  iconOpacity;
-          console.log(whisperState);
-          return (
-            <>
-              <Box
-                height={{ min: '60px', max: '60px' }}
-                direction="row"
-                pad="5px"
-                gap="5px"
-                align="center"
-                onClick={e => togglIWhisper(e, item.identity)}
-                style={{ cursor: cursorStyle }}
-              >
-                {isTalkingTo ? (
-                  <Box width="42px" height="40px" align="center" justify="center" pad={{ top: '3px' }} gap="2px">
-                    <Box width="30px" height="30px">
-                      {whisperState.state === 'SENDING' && (
-                        <Stack anchor="center">
-                          <Box align="center">
-                            <Meter
-                              type="circle"
-                              background="transparent"
-                              size="28px"
-                              thickness="xxsmall"
-                              values={[{ value: talkingpPercent, color: meterColor }]}
-                            />
-                          </Box>
-                          <Box pad="none">
-                            <AssistListening size="20px" color="brand" style={{ opacity: iconOpacity }} />
-                          </Box>
-                        </Stack>
-                      )}
-                      {whisperState.state === 'RECEIVING' && (
-                        <Blog color="brand" size="24px" style={{ opacity: iconOpacity, paddingLeft: '6px' }} />
-                      )}
-                      {whisperState.state === 'STARTING' && <Spinner size="small" color="brand" />}
+    <>
+      {roleNameG !== 'Teacher' && isPiPSupported && pipWindow && (
+        <PiPWindow pipWindow={pipWindow}>
+          <div style={{ height: '100%', width: '100%', display: 'flex', background: '#202124', alignContent: 'end' }}>
+            <ToggleAudioButtonIWhisper className={classes.iconContainer} />
+            <Divider orientation="vertical" flexItem className={classes.divider} />
+            <Box
+              width={{ min: '50px', max: '50px' }}
+              height={{ min: '60', max: '60' }}
+              direction="row"
+              align="center"
+              justify="center"
+              onClick={e => togglIWhisper(e, 'Teacher')}
+              style={{ cursor: 'pointer' }}
+            >
+              <AssistListening size="24px" color="#5B5D62" style={{ opacity: 1.0 }} />
+            </Box>
+            <Divider orientation="vertical" flexItem className={classes.divider} />
+            <Box width={{ min: '100px', max: '100px' }} height={{ min: '60', max: '60' }} direction="row"></Box>
+            <Menu
+              plain
+              items={[
+                {
+                  label: (
+                    <Box alignSelf="center" color="white">
+                      Teacher
                     </Box>
-                    <Box>
-                      <Typography variant="caption" style={{ color: '#606B85' }}>
-                        {message}
-                      </Typography>
+                  ),
+                  onClick: () => {},
+                  icon: (
+                    <Box direction="row">
+                      <Avatar className={classes.purple}>TE</Avatar>
                     </Box>
-                  </Box>
-                ) : null}
+                  ),
+                },
+              ]}
+            />
 
-                <Avatar className={style.color}>{style.represent}</Avatar>
+            <Box justify="center" align="center">
+              <ArrowDropDownIcon style={{ color: '#5B5D62' }} />
+            </Box>
+          </div>
+        </PiPWindow>
+      )}
+      <audio src="/sound/begin.mp3" ref={beginRef} />
+      <audio src="/sound/end.mp3" ref={endRef} />
 
-                <div> {item.identity}</div>
-                <div style={{ color: '#606B85' }}>{isSelf ? '(You)' : null}</div>
-              </Box>
-              <Divider />
-            </>
-          );
-        }}
-      </InfiniteScroll>
-    </Box>
+      <div style={{ height: '100%', width: '100%', display: 'flex', background: 'white', alignContent: 'end' }}>
+        <ToggleAudioButtonIWhisper className={classes.iconContainer} />
+        <Divider orientation="vertical" flexItem className={classes.divider} />
+        <Box
+          width={{ min: '50px', max: '50px' }}
+          height={{ min: '60', max: '60' }}
+          direction="row"
+          align="center"
+          justify="center"
+          onClick={e => togglIWhisper(e, 'Teacher')}
+          style={{ cursor: 'pointer' }}
+        >
+          <AssistListening size="24px" color="brand" style={{ opacity: 1.0 }} />
+        </Box>
+        <Divider orientation="vertical" flexItem className={classes.divider} />
+        <Box width={{ min: '100px', max: '100px' }} height={{ min: '60', max: '60' }} direction="row"></Box>
+        <Box justify="center" align="center">
+          <ArrowDropDownIcon style={{ color: '#5B5D62' }} />
+        </Box>
+      </div>
+
+      <Box width="95%">
+        <Typography variant="subtitle2"> Participants</Typography>
+      </Box>
+      <Box overflow="scroll" height="85%" width="95%">
+        <InfiniteScroll items={participantList}>
+          {(item: any) => {
+            //const time = getFormattedTime(message)!;
+            //const previousTime = getFormattedTime(messages[idx - 1]);
+
+            // Display the MessageInfo component when the author or formatted timestamp differs from the previous message
+            //const shouldDisplayMessageInfo = time !== previousTime || message.author !== messages[idx - 1]?.author;
+
+            //const isLocalParticipant = localParticipant.identity === message.author;
+            const style = styleSheet.find(s => s.identity === item.identity)!;
+            const isSelf = item.identity === localParticipant.identity;
+            const isTalkingTo = !isSelf && item.identity === whisperState.subject;
+            const meterColor = isTalkingTo && whisperState.state === 'SENDING' ? 'brand' : 'transparent';
+            let cursorStyle = 'pointer';
+            if (isSelf) {
+              cursorStyle = 'not-allowed';
+            }
+            if (whisperState.state !== 'IDLE' && !isTalkingTo) {
+              cursorStyle = 'not-allowed';
+            }
+
+            //const percent =   talkingpPercent;
+            //const opacity =  iconOpacity;
+            console.log(whisperState);
+            console.log(nameTable);
+            return (
+              <>
+                <Box
+                  height={{ min: '60px', max: '60px' }}
+                  direction="row"
+                  pad="5px"
+                  gap="5px"
+                  align="center"
+                  onClick={e => togglIWhisper(e, item.identity)}
+                  style={{ cursor: cursorStyle }}
+                >
+                  {isTalkingTo ? (
+                    <Box width="50px" height="40px" align="center" justify="center" pad={{ top: '3px' }} gap="2px">
+                      <Box width="30px" height="30px">
+                        {whisperState.state === 'SENDING' && (
+                          <Stack anchor="center">
+                            <Box align="center">
+                              <Meter
+                                type="circle"
+                                background="transparent"
+                                size="28px"
+                                thickness="xxsmall"
+                                values={[{ value: talkingpPercent, color: meterColor }]}
+                              />
+                            </Box>
+                            <Box pad="none">
+                              <AssistListening size="20px" color="brand" style={{ opacity: iconOpacity }} />
+                            </Box>
+                          </Stack>
+                        )}
+                        {whisperState.state === 'RECEIVING' && (
+                          <Blog color="brand" size="24px" style={{ opacity: iconOpacity, paddingLeft: '6px' }} />
+                        )}
+                        {whisperState.state === 'STARTING' && <Spinner size="small" color="brand" />}
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" style={{ color: '#606B85' }}>
+                          {message}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  ) : null}
+
+                  <Avatar className={style.color}>{style.represent}</Avatar>
+
+                  <div> {Array.isArray(nameTable) && nameTable!.find(n => n.role === item.identity)!.name}</div>
+                  <div style={{ color: '#606B85' }}>{isSelf ? '(You)' : null}</div>
+                </Box>
+                <Divider />
+              </>
+            );
+          }}
+        </InfiniteScroll>
+      </Box>
+    </>
   );
 }

@@ -8,8 +8,8 @@ import { Participant as PT } from 'twilio-video';
 import { makeStyles } from '@material-ui/core/styles';
 import { deepOrange, deepPurple, red, blue, pink, green, lime, grey } from '@material-ui/core/colors';
 import useParticipants from '../../hooks/useParticipants/useParticipants';
-import { Box, Button, Meter, Stack, Spinner, Grommet, Text, Avatar, InfiniteScroll } from 'grommet';
-import { AssistListening, Blog, Blank, Checkmark, Alert, Like, Dislike, Revert } from 'grommet-icons';
+import { Box, Meter, Stack, Spinner, Grommet, Text, Avatar } from 'grommet';
+import { AssistListening, Blog, Blank, Checkmark } from 'grommet-icons';
 import { SyncClient } from 'twilio-sync';
 import { useAppState, IWhisperEventType } from '../../state';
 import { ThemeType } from 'grommet/themes';
@@ -17,11 +17,6 @@ import Divider from '@material-ui/core/Divider';
 
 import Participant from '../Participant/Participant';
 import IWhisperWindow from '../IWhisperWindow/IWhisperWindow';
-import IconButton from '@material-ui/core/IconButton';
-
-import ThumbUpIcon from '@material-ui/icons/ThumbUp';
-import ThumbDownIcon from '@material-ui/icons/ThumbDown';
-import ReplayIcon from '@material-ui/icons/Replay';
 
 const theme: ThemeType = {
   spinner: {
@@ -37,14 +32,22 @@ const useStyles = makeStyles(theme => ({
     height: '100%',
     width: '100%',
 
+    overflow: 'hidden',
+
     '& > *': {
       margin: theme.spacing(0.5),
     },
   },
 
   title: {
-    backgroundColor: 'white',
-    color: 'grey',
+    // backgroundColor: 'black',
+    color: 'white',
+    paddingLeft: '5px',
+  },
+  content: {
+    //backgroundColor: 'black',
+    color: 'white',
+    padding: '5px',
   },
 
   orange: {
@@ -108,7 +111,7 @@ export interface WhisperInstanceType {
 const getFormattedTime = (message?: Message) =>
   message?.dateCreated?.toLocaleTimeString('en-us', { hour: 'numeric', minute: 'numeric' }).toLowerCase();
 
-export default function WhisperController() {
+export default function IWhisperMonitorStyle() {
   const { room, pipWindow } = useVideoContext();
 
   const localParticipant = room!.localParticipant;
@@ -147,7 +150,7 @@ export default function WhisperController() {
     state: 'IDLE',
     subject: localParticipant.identity,
   });
-  const { isIWhisperedBy, setIsIWhisperedBy, eventHistory, setEventHistory } = useAppState();
+  const { isIWhisperedBy, setIsIWhisperedBy, eventHistory, setEventHistory, propertyHistory } = useAppState();
   const [effectiveEvent, setEffectiveEvent] = useState<IWhisperEventType | null>(null);
   const [whisperInstanceList, setWhisperInstanceList] = useState<WhisperInstanceType[]>([]);
   /*if (isIWhisperedBy !== "") {
@@ -155,6 +158,7 @@ export default function WhisperController() {
   }*/
   const lastClickTimeRef = useRef(0);
 
+  const onClick = () => {};
   useEffect(() => {
     if (eventHistory && eventHistory.length > 0 && eventHistory[eventHistory.length - 1]) {
       let lastEvent = eventHistory[eventHistory.length - 1];
@@ -175,6 +179,17 @@ export default function WhisperController() {
     //return ()=>clearInterval(timerinterval.current);
   }, [eventHistory]);
 
+  useEffect(() => {
+    if (propertyHistory && propertyHistory.length > 0 && propertyHistory[propertyHistory.length - 1]) {
+      let lastProperty = propertyHistory[propertyHistory.length - 1];
+      console.log(lastProperty);
+      setInstanceProperty(lastProperty.id, lastProperty.property);
+
+      //}
+    }
+    //return ()=>clearInterval(timerinterval.current);
+  }, [propertyHistory]);
+
   const addWhisperInstance = function(iWhisperEvent: IWhisperEventType) {
     //check if already have talk between two participants
     let previousInstance = whisperInstanceList.find(
@@ -188,25 +203,37 @@ export default function WhisperController() {
       to: iWhisperEvent.from,
       ttl: longestWhisperTime + 50,
       property: 'N/A',
-      timestamp: iWhisperEvent.timestamp,
     } as WhisperInstanceType;
 
     //if not, add an instance to the list
-    //if (!previousInstance){
-    //  setWhisperInstanceList([...whisperInstanceList, newWhisperInstance]);
-    //}
+    if (!previousInstance) {
+      setWhisperInstanceList([...whisperInstanceList, newWhisperInstance]);
+    }
     //if yes (bug?), delete previous ones, add a new instance
-    //else {
-    //let cleanedWhisperIntanceList = whisperInstanceList.filter((w)=>!(w.from === iWhisperEvent.from && w.to === iWhisperEvent.to) && !(w.from === iWhisperEvent.to && w.to === iWhisperEvent.from));
+    else {
+      let cleanedWhisperIntanceList = whisperInstanceList.filter(
+        w =>
+          !(w.from === iWhisperEvent.from && w.to === iWhisperEvent.to) &&
+          !(w.from === iWhisperEvent.to && w.to === iWhisperEvent.from)
+      );
 
-    setWhisperInstanceList([newWhisperInstance].concat(whisperInstanceList));
-    //}
+      setWhisperInstanceList(cleanedWhisperIntanceList.concat(newWhisperInstance));
+    }
 
-    //setTimeout(() => {
-    //        removeWhisperInstanceById(newWhisperInstance.id);
-    //      }, newWhisperInstance.ttl * 100);
+    setTimeout(() => {
+      removeWhisperInstanceById(newWhisperInstance.id);
+    }, newWhisperInstance.ttl * 100 * 10);
 
     return;
+  };
+
+  const setInstanceProperty = function(id: string, property: string) {
+    let instanceList = [...whisperInstanceList];
+    let index = instanceList.findIndex(ins => ins.id == id);
+    if (index != -1) {
+      instanceList[index].property = property;
+      setWhisperInstanceList(instanceList);
+    }
   };
 
   const removeWhisperInstanceByEvent = function(iWhisperEvent: IWhisperEventType) {
@@ -228,7 +255,7 @@ export default function WhisperController() {
         !(w.from === iWhisperEvent.to && w.to === iWhisperEvent.from)
     );
 
-    //setWhisperInstanceList(cleanedWhisperIntanceList);
+    setWhisperInstanceList(cleanedWhisperIntanceList);
 
     return;
   };
@@ -238,136 +265,54 @@ export default function WhisperController() {
     setWhisperInstanceList(cleanedInstanceList);
   };
 
-  const setGoodWhisper = function(id: string) {
-    let instanceList = [...whisperInstanceList];
-    let index = instanceList.findIndex(ins => ins.id == id);
-    if (index != -1) {
-      sendProperty(id, 'OK');
-      instanceList[index].property = 'OK';
-      setWhisperInstanceList(instanceList);
-    }
-  };
-
-  const setBadWhisper = function(id: string) {
-    let instanceList = [...whisperInstanceList];
-    let index = instanceList.findIndex(ins => ins.id == id);
-    if (index != -1) {
-      sendProperty(id, 'NG');
-      instanceList[index].property = 'NG';
-      setWhisperInstanceList(instanceList);
-    }
-  };
-
-  const setNeutralWhisper = function(id: string) {
-    let instanceList = [...whisperInstanceList];
-    let index = instanceList.findIndex(ins => ins.id == id);
-    if (index != -1) {
-      sendProperty(id, 'N/A');
-      instanceList[index].property = 'N/A';
-      setWhisperInstanceList(instanceList);
-    }
-  };
-
-  const sendProperty = function(id: string, property: string) {
-    fetch('https://34.222.53.145:5000/token', { method: 'POST' })
-      .then(res => res.json())
-      .then(data => {
-        const syncClient = new SyncClient(data.token);
-        syncClient.list('actionList').then(list => {
-          list
-            .push({ action: 'setProperty', id: id, property: property, user: 'XXX' }, { ttl: 86400 })
-            .then(function(item) {
-              console.log('List Item push() successful, item index:' + item.index + ', value: ', item.data);
-            })
-            .catch(function(error) {
-              console.error('List Item push() failed', error);
-            });
-        });
-      });
-  };
-
   return (
     <div className={classes.root}>
       <div className={classes.title}>
-        <Typography variant="subtitle1"> I-Whisper Controller </Typography>
+        <Typography variant="subtitle2"> I-Whisper Monitor </Typography>
       </div>
-      <Box height="75%" width="95%" overflow="auto">
-        <InfiniteScroll items={whisperInstanceList}>
-          {(item: any) => {
-            //const time = getFormattedTime(message)!;
-            //const previousTime = getFormattedTime(messages[idx - 1]);
+      <Box
+        round="large"
+        pad={{ right: 'small' }}
+        gap="xsmall"
+        width={{ min: '60px', max: '260px' }}
+        align="center"
+        background={'status-unknown'}
+        direction="row"
+      >
+        <Avatar size="small" background={'placeholder'}>
+          <Text>/</Text>
+        </Avatar>
+        <Text size="small">whisperInstance.from + whispers to + whisperInstance.to</Text>
+      </Box>
 
-            // Display the MessageInfo component when the author or formatted timestamp differs from the previous message
-            //const shouldDisplayMessageInfo = time !== previousTime || message.author !== messages[idx - 1]?.author;
+      <Box
+        round="large"
+        pad={{ right: 'small' }}
+        gap="xsmall"
+        width={{ min: '60px', max: '260px' }}
+        align="center"
+        background={'status-ok'}
+        direction="row"
+      >
+        <Avatar size="small" background={'focus'}>
+          <Text>/</Text>
+        </Avatar>
+        <Text size="small">whisperInstance.from + whispers to + whisperInstance.to</Text>
+      </Box>
 
-            //const isLocalParticipant = localParticipant.identity === message.author;
-            const styleFrom = styleSheet.find(s => s.identity === item.from)!;
-            const styleTo = styleSheet.find(s => s.identity === item.to)!;
-
-            //const percent =   talkingpPercent;
-            //const opacity =  iconOpacity;
-
-            return (
-              <Box
-                height={{ min: '60px', max: '120px' }}
-                width={{ min: '60px', max: '260px' }}
-                gap="xsmall"
-                margin="xsmall"
-              >
-                <Box
-                  round="large"
-                  pad={{ right: 'small' }}
-                  gap="xsmall"
-                  align="center"
-                  background={
-                    item.property === 'N/A'
-                      ? 'status-unknown'
-                      : item.property === 'OK'
-                      ? 'status-ok'
-                      : 'status-critical'
-                  }
-                  direction="row"
-                >
-                  <Avatar
-                    size="small"
-                    background={
-                      item.property === 'N/A' ? 'placeholder' : item.property === 'OK' ? 'focus' : 'status-error'
-                    }
-                  >
-                    {item.property === 'N/A' ? (
-                      <Text>/</Text>
-                    ) : item.property === 'OK' ? (
-                      <Checkmark color="white" />
-                    ) : (
-                      <Text>!</Text>
-                    )}
-                  </Avatar>
-                  <Box>
-                    <Text size="small">{item.from + ' whispers to ' + item.to}</Text>
-                  </Box>
-                </Box>
-
-                <Box direction="row" justify="end" gap="xsmall" align="center">
-                  <Box margin={{ right: 'medium' }}>
-                    <Text size="small">{new Date(item.timestamp).toLocaleTimeString('en-us').toLowerCase()}</Text>
-                  </Box>
-
-                  <Avatar size="small" background="status-ok" onClick={() => setGoodWhisper(item.id)}>
-                    <Like color="white" size="small" />
-                  </Avatar>
-
-                  <Avatar size="small" pad="xsmall" background="status-critical" onClick={() => setBadWhisper(item.id)}>
-                    <Dislike color="white" size="small" />
-                  </Avatar>
-
-                  <Avatar size="small" background="status-unknown" onClick={() => setNeutralWhisper(item.id)}>
-                    <Revert color="white" size="small" />
-                  </Avatar>
-                </Box>
-              </Box>
-            );
-          }}
-        </InfiniteScroll>
+      <Box
+        round="large"
+        pad={{ right: 'small' }}
+        gap="xsmall"
+        width={{ min: '60px', max: '260px' }}
+        align="center"
+        background={'status-critical'}
+        direction="row"
+      >
+        <Avatar size="small" background={'status-error'}>
+          <Text>/</Text>
+        </Avatar>
+        <Text size="small">whisperInstance.from + whispers to + whisperInstance.to</Text>
       </Box>
     </div>
   );

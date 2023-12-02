@@ -26,6 +26,7 @@ export default function PreJoinScreens() {
   const [conditionName, setConditionName] = useState<string>('');
   const [conditions, setConditions] = useState<string[]>([]);
   const [roles, setRoles] = useState<string[]>([]);
+  const [nameReal, setNameReal] = useState<string>('');
 
   const [mediaError, setMediaError] = useState<Error>();
 
@@ -78,11 +79,19 @@ export default function PreJoinScreens() {
           setConditionName={setConditionName}
           setExperimentName={setRoomName}
           handleSubmit={handleSubmit}
+          nameReal={nameReal}
+          setNameReal={setNameReal}
         />
       )}
 
       {step === Steps.introductionStep && (
-        <IntroductionScreen roleName={roleName} conditionName={conditionName} roomName={roomName} setStep={setStep} />
+        <IntroductionScreen
+          roleName={roleName}
+          conditionName={conditionName}
+          roomName={roomName}
+          setStep={setStep}
+          nameReal={nameReal}
+        />
       )}
 
       {step === Steps.deviceSelectionStep && (
@@ -91,6 +100,7 @@ export default function PreJoinScreens() {
           conditionName={conditionName}
           roomName={roomName}
           setStep={setStep}
+          nameReal={nameReal}
         />
       )}
     </IntroContainer>

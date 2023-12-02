@@ -31,17 +31,19 @@ import DeviceSelectionDiv from '../../DeviceSelectionDialog/DeviceSelectionDiv';
 import { getDeviceInfo, isPermissionDenied } from '../../../utils';
 import { RecordingRule, RecordingRules, RoomType } from '../../../types';
 
+import { SyncClient } from 'twilio-sync';
+
 const useStyles = makeStyles((theme: Theme) => ({
   inputContainer: {
     display: 'flex',
-    width: '30%',
-    justifyContent: 'space-between',
-    margin: '1.5em 0 3.5em',
+    width: '40%',
+    justifyContent: 'stretch',
+    margin: '0.5em 0 0.5em',
     '& div:not(:last-child)': {
-      marginRight: '1em',
+      marginRight: '2em',
     },
     [theme.breakpoints.down('sm')]: {
-      margin: '1.5em 0 2em',
+      margin: '0.5em 0 0.5em',
     },
   },
   screenShareBanner: {
@@ -93,11 +95,12 @@ const useStyles = makeStyles((theme: Theme) => ({
     justifyContent: 'end',
     gap: '40px',
     margin: '0.5em',
+    paddingRight: '4em',
     [theme.breakpoints.down('sm')]: {
       flexDirection: 'column-reverse',
       width: '100%',
       '& button': {
-        margin: '0.5em 0',
+        margin: '1em 0',
         gap: '3px',
       },
     },
@@ -134,6 +137,7 @@ interface DeviceSelectionScreenProps {
   roomName: string;
   conditionName: string;
   setStep: (step: Steps) => void;
+  nameReal: string;
 }
 
 export default function DeviceSelectionScreen({
@@ -141,17 +145,23 @@ export default function DeviceSelectionScreen({
   conditionName,
   roomName,
   setStep,
+  nameReal,
 }: DeviceSelectionScreenProps) {
   const classes = useStyles();
   const {
     getToken,
+    getTokenSync,
     isFetching,
     isKrispEnabled,
     isKrispInstalled,
     roleNameG,
     conditionNameG,
     ifALessonStarted,
-    updateSubscribeRules,
+    syncClient,
+    setSyncClient,
+    registerName,
+    getNameTable,
+    setNameTable,
   } = useAppState();
   const { connect: chatConnect } = useChatContext();
   const { connect: videoConnect, isAcquiringLocalTracks, isConnecting, room } = useVideoContext();
@@ -184,9 +194,21 @@ export default function DeviceSelectionScreen({
     if (!window.location.origin.includes('twil.io')) {
       window.history.replaceState(null, '', window.encodeURI(`/room/${urlRoomName}${window.location.search || ''}`));
     }
-    getToken(roleName, urlRoomName).then(({ token }) => {
-      videoConnect(token);
-      process.env.REACT_APP_DISABLE_TWILIO_CONVERSATIONS !== 'true' && chatConnect(token);
+    registerName(nameReal, roleName).then(() => {
+      getToken(roleName, urlRoomName).then(({ token }) => {
+        getNameTable(roleName).then(({}) => {
+          //setNameTable(new_table);
+        });
+        videoConnect(token);
+        process.env.REACT_APP_DISABLE_TWILIO_CONVERSATIONS !== 'true' && chatConnect(token);
+        if (roomName === 'I-Whisper Experiment' && conditionName === '1') {
+          getTokenSync().then(({ tokenSync }) => {
+            console.log(tokenSync);
+            const syncClient_ = new SyncClient(tokenSync);
+            setSyncClient(syncClient_);
+          });
+        }
+      });
     });
   };
 
@@ -248,10 +270,10 @@ export default function DeviceSelectionScreen({
   return (
     <>
       <Typography variant="h5" className={classes.gutterBottom}>
-        Join {roomName}, condition {conditionName}, as {roleName}.
+        {nameReal}, join {roomName}, condition {conditionName}, as {roleName}.
       </Typography>
 
-      <Grid container justifyContent="center">
+      <Grid container>
         <Grid item md={5} sm={12} xs={12}>
           {!permission ? (
             <Typography variant="body1">Please allow this site to access your video and audio devices.</Typography>
@@ -262,7 +284,7 @@ export default function DeviceSelectionScreen({
 
         <Grid item md={5} sm={12} xs={12} style={{ paddingLeft: '2em' }}>
           <div className={classes.localPreviewContainer}>
-            <LocalVideoPreview identity={roleName} />
+            <LocalVideoPreview identity={nameReal} />
           </div>
         </Grid>
 
